@@ -11,7 +11,8 @@
     "!src/**/*.test.ts",
     "index.ts",
     "openclaw.plugin.json",
-    "README.md"
+    "README.md",
+    "INSTALL.md"
   ],
   "scripts": {
     "build": "tsc",
@@ -27,10 +28,11 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@mariozechner/pi-ai": "^0.61.1",
     "better-sqlite3": "^11.5.0",
+    "json5": "^2.2.3",
     "sqlite-vec": "^0.1.5",
-    "zod": "^4.0.0",
-    "json5": "^2.2.3"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",

@@ -6,6 +6,8 @@ import { startPendingTimeoutLoop } from "./pending_buffer/index.js";
 import {
   defaultRegistry as defaultReextractRegistry,
   deriveExistingStrategy,
+  reextractMessagesStrategy,
+  reextractRawEventsStrategy,
   startReextractWorker,
 } from "./reextract/index.js";
 import { handleReflectCallback } from "./reflect/callback.js";
@@ -97,12 +99,18 @@ export default {
         }),
       });
 
-      // Register the default reextract strategies (idempotent register call
-      // for the heuristic worker; LLM strategies land in a later change).
-      try {
-        defaultReextractRegistry.register(deriveExistingStrategy);
-      } catch {
-        // already registered (idempotent re-boot); fine.
+      // Register the default reextract strategies. Each register() throws
+      // on duplicate name; the try/catch makes a re-boot idempotent.
+      for (const strategy of [
+        deriveExistingStrategy,
+        reextractRawEventsStrategy,
+        reextractMessagesStrategy,
+      ]) {
+        try {
+          defaultReextractRegistry.register(strategy);
+        } catch {
+          // already registered (idempotent re-boot); fine.
+        }
       }
       runtime.stopReextract = startReextractWorker(
         {

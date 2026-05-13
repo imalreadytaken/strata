@@ -70,6 +70,9 @@ describe("bootRuntime", () => {
     expect(runtime.capabilities.get("expenses")!.meta.ingest_event_types).toContain(
       "consumption",
     );
+    // LLMClient is wired (default: heuristic backend).
+    expect(runtime.llmClient).toBeDefined();
+    expect(typeof runtime.llmClient.infer).toBe("function");
   });
 
   it("is idempotent: two calls return the same runtime, migrations run once", async () => {

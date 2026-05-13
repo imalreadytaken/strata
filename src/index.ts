@@ -5,6 +5,7 @@ import { installMessageHooks } from "./hooks/index.js";
 import { startPendingTimeoutLoop } from "./pending_buffer/index.js";
 import { bootRuntime } from "./runtime.js";
 import { registerEventTools } from "./tools/index.js";
+import { installTriageHook } from "./triage/hook.js";
 
 /**
  * Strata plugin entry.
@@ -64,6 +65,14 @@ export default {
       });
       registerEventTools(api, runtime);
       registerStrataCallbacks(api, runtime);
+      installTriageHook(api, {
+        messagesRepo: runtime.messagesRepo,
+        rawEventsRepo: runtime.rawEventsRepo,
+        pendingBuffer: runtime.pendingBuffer,
+        capabilities: runtime.capabilities,
+        llmClient: runtime.llmClient,
+        logger: runtime.logger,
+      });
       runtime.logger.info("Strata plugin registered", {
         db_path: runtime.config.database.path,
       });

@@ -41,6 +41,7 @@ import {
   SchemaEvolutionsRepository,
 } from "./db/repositories/index.js";
 import { PendingBuffer } from "./pending_buffer/index.js";
+import { HeuristicLLMClient, type LLMClient } from "./triage/index.js";
 
 const BUNDLED_CAPABILITIES_ROOT = fileURLToPath(
   new URL("./capabilities/", import.meta.url),
@@ -60,6 +61,11 @@ export interface StrataRuntime {
   capabilityHealthRepo: CapabilityHealthRepository;
   pendingBuffer: PendingBuffer;
   capabilities: CapabilityRegistry;
+  /**
+   * Intent classifier backend. Defaults to `HeuristicLLMClient`; future
+   * change can swap in an LLM-backed implementation.
+   */
+  llmClient: LLMClient;
 }
 
 let cached: Promise<StrataRuntime> | undefined;
@@ -131,6 +137,7 @@ export async function bootRuntime(api: OpenClawPluginApi): Promise<StrataRuntime
         capabilityHealthRepo: new CapabilityHealthRepository(db),
         pendingBuffer,
         capabilities,
+        llmClient: new HeuristicLLMClient(),
       } satisfies StrataRuntime;
     } catch (err) {
       // Failed boots must NOT poison the cache; later attempts (e.g. after

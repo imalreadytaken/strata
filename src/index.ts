@@ -1,5 +1,6 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 
+import { registerStrataCallbacks } from "./callbacks/index.js";
 import { installMessageHooks } from "./hooks/index.js";
 import { startPendingTimeoutLoop } from "./pending_buffer/index.js";
 import { bootRuntime } from "./runtime.js";
@@ -60,6 +61,7 @@ export default {
         logger: runtime.logger,
       });
       registerEventTools(api, runtime);
+      registerStrataCallbacks(api, runtime);
       runtime.logger.info("Strata plugin registered", {
         db_path: runtime.config.database.path,
       });

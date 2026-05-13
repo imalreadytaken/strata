@@ -24,3 +24,14 @@ export {
   type DecayDeps,
   type DetectDecayOptions,
 } from "./decay_detector.js";
+
+export {
+  generateProposals,
+  renderProposalCard,
+  type GenerateProposalsDeps,
+  type GenerateProposalsResult,
+  type ProposalCard,
+  type SkippedReason,
+} from "./proposal_generator.js";
+
+export { pushProposalsToUser, type PushDeps } from "./push.js";

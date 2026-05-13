@@ -16,7 +16,9 @@ export type StrataErrorCode =
   | "STRATA_E_DB_QUERY_FAILED"
   | "STRATA_E_VALIDATION"
   | "STRATA_E_NOT_FOUND"
-  | "STRATA_E_STATE_TRANSITION";
+  | "STRATA_E_STATE_TRANSITION"
+  | "STRATA_E_CAPABILITY_INVALID"
+  | "STRATA_E_CAPABILITY_MIGRATE_FAILED";
 
 export interface StrataErrorOptions {
   cause?: unknown;

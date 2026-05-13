@@ -61,6 +61,9 @@ describe("bootRuntime", () => {
     expect(runtime.capabilityHealthRepo).toBeDefined();
     // System tables exist (we can insert).
     expect(await runtime.messagesRepo.count()).toBe(0);
+    // Capability registry is empty on a fresh DB with nothing on disk.
+    expect(runtime.capabilities).toBeInstanceOf(Map);
+    expect(runtime.capabilities.size).toBe(0);
   });
 
   it("is idempotent: two calls return the same runtime, migrations run once", async () => {

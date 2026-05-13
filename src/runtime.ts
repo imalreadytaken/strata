@@ -13,9 +13,14 @@
  * `resetRuntimeForTests()` to clear the cache between cases.
  */
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 
+import {
+  loadCapabilities,
+  type CapabilityRegistry,
+} from "./capabilities/index.js";
 import { loadConfig, type StrataConfig } from "./core/config.js";
 import { createLogger, type Logger } from "./core/logger.js";
 import type DatabaseType from "better-sqlite3";
@@ -37,6 +42,10 @@ import {
 } from "./db/repositories/index.js";
 import { PendingBuffer } from "./pending_buffer/index.js";
 
+const BUNDLED_CAPABILITIES_ROOT = fileURLToPath(
+  new URL("./capabilities/", import.meta.url),
+);
+
 export interface StrataRuntime {
   config: Readonly<StrataConfig>;
   db: DatabaseType.Database;
@@ -50,6 +59,7 @@ export interface StrataRuntime {
   proposalsRepo: ProposalsRepository;
   capabilityHealthRepo: CapabilityHealthRepository;
   pendingBuffer: PendingBuffer;
+  capabilities: CapabilityRegistry;
 }
 
 let cached: Promise<StrataRuntime> | undefined;
@@ -98,19 +108,29 @@ export async function bootRuntime(api: OpenClawPluginApi): Promise<StrataRuntime
         logger,
       });
 
+      const capabilityRegistryRepo = new CapabilityRegistryRepository(db);
+      const capabilities = await loadCapabilities({
+        db,
+        repo: capabilityRegistryRepo,
+        bundledRoot: BUNDLED_CAPABILITIES_ROOT,
+        userRoot: config.paths.capabilitiesDir,
+        logger,
+      });
+
       return {
         config,
         db,
         logger,
         messagesRepo: new MessagesRepository(db),
         rawEventsRepo: new RawEventsRepository(db),
-        capabilityRegistryRepo: new CapabilityRegistryRepository(db),
+        capabilityRegistryRepo,
         schemaEvolutionsRepo: new SchemaEvolutionsRepository(db),
         reextractJobsRepo: new ReextractJobsRepository(db),
         buildsRepo: new BuildsRepository(db),
         proposalsRepo: new ProposalsRepository(db),
         capabilityHealthRepo: new CapabilityHealthRepository(db),
         pendingBuffer,
+        capabilities,
       } satisfies StrataRuntime;
     } catch (err) {
       // Failed boots must NOT poison the cache; later attempts (e.g. after

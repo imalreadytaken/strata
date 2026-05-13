@@ -67,6 +67,8 @@ export interface StrataRuntime {
    * change can swap in an LLM-backed implementation.
    */
   llmClient: LLMClient;
+  /** Reflect cron stop handle, populated when the agent is started. */
+  stopReflect?: () => void;
 }
 
 let cached: Promise<StrataRuntime> | undefined;

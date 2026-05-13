@@ -3,6 +3,8 @@ import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { registerStrataCallbacks } from "./callbacks/index.js";
 import { installMessageHooks } from "./hooks/index.js";
 import { startPendingTimeoutLoop } from "./pending_buffer/index.js";
+import { handleReflectCallback } from "./reflect/callback.js";
+import { startReflectAgent } from "./reflect/cron.js";
 import { bootRuntime } from "./runtime.js";
 import { registerEventTools } from "./tools/index.js";
 import { installTriageHook } from "./triage/hook.js";
@@ -72,6 +74,22 @@ export default {
         capabilities: runtime.capabilities,
         llmClient: runtime.llmClient,
         logger: runtime.logger,
+      });
+      runtime.stopReflect = startReflectAgent({
+        db: runtime.db,
+        capabilityRegistryRepo: runtime.capabilityRegistryRepo,
+        capabilityHealthRepo: runtime.capabilityHealthRepo,
+        proposalsRepo: runtime.proposalsRepo,
+        llmClient: runtime.llmClient,
+        logger: runtime.logger,
+      });
+      api.registerInteractiveHandler({
+        channel: "telegram",
+        namespace: "strata-propose",
+        handler: handleReflectCallback({
+          proposalsRepo: runtime.proposalsRepo,
+          logger: runtime.logger,
+        }),
       });
       runtime.logger.info("Strata plugin registered", {
         db_path: runtime.config.database.path,

@@ -35,3 +35,28 @@ export {
 } from "./proposal_generator.js";
 
 export { pushProposalsToUser, type PushDeps } from "./push.js";
+
+export {
+  runReflectOnce,
+  type ReflectRunDeps,
+  type ReflectRunResult,
+} from "./runner.js";
+
+export {
+  alreadyFiredThisWeek,
+  DEFAULT_REFLECT_SCHEDULE,
+  startReflectAgent,
+  type ReflectSchedule,
+  type StartReflectAgentOptions,
+} from "./cron.js";
+
+export {
+  buildReflectKeyboard,
+  handleReflectCallback,
+  parseReflectPayload,
+  type ParsedReflectPayload,
+  type ReflectButton,
+  type ReflectCallbackAction,
+  type ReflectCallbackDeps,
+  type ReflectKeyboard,
+} from "./callback.js";

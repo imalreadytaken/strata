@@ -30,6 +30,7 @@ export function registerStrataCallbacks(
   // runs the bound capability's pipeline (mirrors `registerEventTools`).
   const baseDeps: EventToolDeps = {
     rawEventsRepo: runtime.rawEventsRepo,
+    proposalsRepo: runtime.proposalsRepo,
     pendingBuffer: runtime.pendingBuffer,
     logger: runtime.logger,
     sessionId: FALLBACK_SESSION,

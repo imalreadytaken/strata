@@ -68,12 +68,16 @@ describe("renderRoutingContext", () => {
     expect(r.prependContext).not.toContain("strata_create_pending_event");
   });
 
-  it("build_request template mentions the bridge gap", () => {
+  it("build_request template routes to strata_propose_capability", () => {
     const r = renderRoutingContext(
       { kind: "build_request", confidence: 0.85, reasoning: "加个追踪" },
       makeInput(),
     );
-    expect(r.prependContext.toLowerCase()).toContain("build bridge");
+    expect(r.prependContext).toContain("strata_propose_capability");
+    // Must NOT claim Build Bridge is unavailable (the old placeholder text).
+    expect(r.prependContext.toLowerCase()).not.toMatch(
+      /not yet (shipped|available)/,
+    );
   });
 
   it("chitchat returns empty prependContext but a non-empty system block", () => {
@@ -106,6 +110,7 @@ describe("renderRoutingContext", () => {
       "strata_supersede_event",
       "strata_abandon_event",
       "strata_search_events",
+      "strata_propose_capability",
     ]) {
       expect(r.prependSystemContext).toContain(name);
     }

@@ -20,6 +20,7 @@ import { SYSTEM_MIGRATIONS_DIR } from "../db/index.js";
 import {
   CapabilityHealthRepository,
   MessagesRepository,
+  ProposalsRepository,
   RawEventsRepository,
 } from "../db/repositories/index.js";
 import { PendingBuffer } from "../pending_buffer/index.js";
@@ -31,6 +32,7 @@ export interface TestHarness {
   logger: Logger;
   messagesRepo: MessagesRepository;
   rawEventsRepo: RawEventsRepository;
+  proposalsRepo: ProposalsRepository;
   capabilityHealthRepo: CapabilityHealthRepository;
   pendingBuffer: PendingBuffer;
   deps: EventToolDeps & { db: Database };
@@ -59,6 +61,7 @@ export function makeHarness(opts: MakeHarnessOpts = {}): TestHarness {
   });
   const messagesRepo = new MessagesRepository(db);
   const rawEventsRepo = new RawEventsRepository(db);
+  const proposalsRepo = new ProposalsRepository(db);
   const capabilityHealthRepo = new CapabilityHealthRepository(db);
   const pendingBuffer = new PendingBuffer({
     stateFile: path.join(tmp, "pending_buffer.json"),
@@ -67,6 +70,7 @@ export function makeHarness(opts: MakeHarnessOpts = {}): TestHarness {
   const sessionId = opts.sessionId ?? "s-test";
   const deps: EventToolDeps & { db: Database } = {
     rawEventsRepo,
+    proposalsRepo,
     pendingBuffer,
     logger,
     sessionId,
@@ -82,6 +86,7 @@ export function makeHarness(opts: MakeHarnessOpts = {}): TestHarness {
     logger,
     messagesRepo,
     rawEventsRepo,
+    proposalsRepo,
     capabilityHealthRepo,
     pendingBuffer,
     deps,

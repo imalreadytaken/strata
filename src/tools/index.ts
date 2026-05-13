@@ -19,6 +19,7 @@ import type { StrataRuntime } from "../runtime.js";
 import { abandonEventTool } from "./abandon_event.js";
 import { commitEventTool } from "./commit_event.js";
 import { createPendingEventTool } from "./create_pending_event.js";
+import { proposeCapabilityTool } from "./propose_capability.js";
 import { searchEventsTool } from "./search_events.js";
 import { supersedeEventTool } from "./supersede_event.js";
 import type { AnyAgentTool, EventToolDeps } from "./types.js";
@@ -64,6 +65,12 @@ export {
   type SearchEventsResultRow,
   searchEventsSchema,
 } from "./search_events.js";
+export {
+  proposeCapabilityTool,
+  type ProposeCapabilityInput,
+  type ProposeCapabilityDetails,
+  proposeCapabilitySchema,
+} from "./propose_capability.js";
 export type { AnyAgentTool, EventToolDeps } from "./types.js";
 
 /**
@@ -82,6 +89,7 @@ export function buildEventTools(
     supersedeEventTool(deps),
     abandonEventTool(deps),
     searchEventsTool(deps),
+    proposeCapabilityTool(deps),
   ];
 }
 
@@ -105,6 +113,7 @@ export function registerEventTools(
     }
     const deps: EventToolDeps & { db: import("better-sqlite3").Database } = {
       rawEventsRepo: runtime.rawEventsRepo,
+      proposalsRepo: runtime.proposalsRepo,
       pendingBuffer: runtime.pendingBuffer,
       logger: runtime.logger,
       sessionId,

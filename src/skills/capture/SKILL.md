@@ -14,7 +14,7 @@ description: |
 
   Do NOT activate for:
   - Questions about historical data (use a query skill)
-  - Build requests ("我想加个 X 追踪") (use a build skill)
+  - Build requests ("我想加个 X 追踪", "track X for me") — these go to the **build skill**, which calls `strata_propose_capability` to record the request in the `proposals` ledger. Do NOT call `strata_create_pending_event` for build requests.
   - Corrections of previously-recorded facts (use `strata_search_events` + `strata_supersede_event`)
   - Pure chitchat with no factual content
 version: 1

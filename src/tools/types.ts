@@ -8,6 +8,7 @@
  */
 import type { PipelineToolDeps } from "../capabilities/pipeline_runner.js";
 import type { Logger } from "../core/logger.js";
+import type { ProposalsRepository } from "../db/repositories/proposals.js";
 import type { RawEventsRepository } from "../db/repositories/raw_events.js";
 import type { PendingBuffer } from "../pending_buffer/index.js";
 import type { ToolResult } from "./result.js";
@@ -26,6 +27,7 @@ export interface AnyAgentTool {
 /** Dependency bag every tool factory accepts. */
 export interface EventToolDeps {
   rawEventsRepo: RawEventsRepository;
+  proposalsRepo: ProposalsRepository;
   pendingBuffer: PendingBuffer;
   sessionId: string;
   logger: Logger;

@@ -89,12 +89,13 @@ const STRATA_TOOLS = [
   "strata_supersede_event",
   "strata_abandon_event",
   "strata_search_events",
+  "strata_propose_capability",
 ] as const;
 
 function renderStaticBlock(input: TriageInput): string {
   const capsLine =
     input.active_capabilities.length === 0
-      ? "(none yet — Build Bridge can create one)"
+      ? "(none yet — request a new one via the build skill)"
       : input.active_capabilities.join(", ");
   return [
     "## Strata is active in this session",
@@ -108,6 +109,7 @@ function renderStaticBlock(input: TriageInput): string {
     `- ${STRATA_TOOLS[3]} — cross-session correction of a committed event`,
     `- ${STRATA_TOOLS[4]} — decline a pending event → status='abandoned'`,
     `- ${STRATA_TOOLS[5]} — search past raw_events by summary / type / time`,
+    `- ${STRATA_TOOLS[6]} — record a user-driven build request in 'proposals'`,
     "",
     "Raw event state machine: pending → committed | superseded | abandoned.",
   ].join("\n");
@@ -152,10 +154,10 @@ function renderPerTurnBlock(triage: TriageResult, input: TriageInput): string {
     case "build_request":
       return [
         ...header,
-        "Recommended path: acknowledge conversationally — Build Bridge is not yet shipped.",
+        "Recommended skill: build (src/skills/build/SKILL.md).",
         pending,
         "",
-        "When the user asks Strata to add a new capability, respond explaining that the capability-creation flow is still under construction and offer to capture the request as a `raw_event` for later (event_type='build_request').",
+        "Tool: strata_propose_capability. Identify the requested domain; if it's too vague, ask ONE clarifying question first, then call the tool with a coherent `title` / `summary` / `rationale`. The proposal lands at status='pending' in the 'proposals' table; acknowledge to the user with the returned `proposal_id` and note that Build Bridge will pick it up when shipped.",
       ].join("\n");
     default:
       return ""; // unreachable; here for exhaustiveness

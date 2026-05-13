@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { loadCaptureSkill, parseSkillFile } from "./index.js";
+import { loadBuildSkill, loadCaptureSkill, parseSkillFile } from "./index.js";
 
 describe("loadCaptureSkill", () => {
   it("loads the shipped SKILL.md", async () => {
@@ -34,6 +34,41 @@ describe("loadCaptureSkill", () => {
   it("mentions the inline-keyboard rendering gap", async () => {
     const { body } = await loadCaptureSkill();
     expect(body.toLowerCase()).toContain("inline keyboard");
+  });
+
+  it("cross-references the build skill for build requests", async () => {
+    const { description } = (await loadCaptureSkill()).frontmatter;
+    const { body } = await loadCaptureSkill();
+    // Either the frontmatter description or the body must explicitly redirect
+    // build requests to strata_propose_capability.
+    const combined = `${description}\n${body}`;
+    expect(combined).toContain("strata_propose_capability");
+  });
+});
+
+describe("loadBuildSkill", () => {
+  it("loads the shipped SKILL.md", async () => {
+    const skill = await loadBuildSkill();
+    expect(skill.frontmatter.name).toBe("build");
+    expect(skill.frontmatter.description.length).toBeGreaterThan(0);
+    expect(skill.body.length).toBeGreaterThan(100);
+  });
+
+  it("body names the build tool", async () => {
+    const { body } = await loadBuildSkill();
+    expect(body).toContain("strata_propose_capability");
+  });
+
+  it("body references the proposals table", async () => {
+    const { body } = await loadBuildSkill();
+    expect(body.toLowerCase()).toContain("proposals");
+  });
+
+  it("body forbids the agent from running a build / modifying capabilities/", async () => {
+    const { body } = await loadBuildSkill();
+    // Both rules must appear somewhere in the body.
+    expect(body.toLowerCase()).toMatch(/do not (run|generate|modify)/i);
+    expect(body).toContain("capabilities/");
   });
 });
 

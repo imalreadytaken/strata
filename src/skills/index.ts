@@ -1,32 +1,42 @@
 /**
- * Skill loader. Reads `capture/SKILL.md` relative to this file and parses
- * the YAML-ish front-matter into a typed object. We hand-roll the parser
- * because the schema is small (`name` / `description` / optional `version`)
- * and we want to keep dependencies minimal.
+ * Skill loaders. Reads `capture/SKILL.md` and `build/SKILL.md` relative
+ * to this file and parses the YAML-ish front-matter into a typed object.
+ * We hand-roll the parser because the schema is small (`name` /
+ * `description` / optional `version`) and we want to keep dependencies
+ * minimal.
  *
- * The OpenClaw skill-router contract is not yet finalised; this loader is
- * the seam the future router will call.
+ * The OpenClaw skill-router contract is not yet finalised; these loaders
+ * are the seam the future router will call.
  */
 import { readFile } from "node:fs/promises";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export interface CaptureSkillFrontmatter {
+export interface SkillFrontmatter {
   name: string;
   description: string;
   version?: string;
 }
 
+/** @deprecated Prefer `SkillFrontmatter` — kept for back-compat. */
+export type CaptureSkillFrontmatter = SkillFrontmatter;
+
 export interface LoadedSkill {
-  frontmatter: CaptureSkillFrontmatter;
+  frontmatter: SkillFrontmatter;
   body: string;
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CAPTURE_SKILL_PATH = path.join(__dirname, "capture", "SKILL.md");
+const BUILD_SKILL_PATH = path.join(__dirname, "build", "SKILL.md");
 
 export async function loadCaptureSkill(): Promise<LoadedSkill> {
   const raw = await readFile(CAPTURE_SKILL_PATH, "utf8");
+  return parseSkillFile(raw);
+}
+
+export async function loadBuildSkill(): Promise<LoadedSkill> {
+  const raw = await readFile(BUILD_SKILL_PATH, "utf8");
   return parseSkillFile(raw);
 }
 
@@ -54,7 +64,7 @@ export function parseSkillFile(raw: string): LoadedSkill {
  * Anything fancier (lists, anchors, mappings) is out of scope; the skill
  * format keeps to this subset.
  */
-function parseFrontMatter(text: string): CaptureSkillFrontmatter {
+function parseFrontMatter(text: string): SkillFrontmatter {
   const lines = text.split("\n");
   const out: Record<string, string> = {};
   let i = 0;
@@ -93,7 +103,7 @@ function parseFrontMatter(text: string): CaptureSkillFrontmatter {
   if (typeof out.description !== "string" || !out.description) {
     throw new Error("skill front-matter is missing required key 'description'");
   }
-  const frontmatter: CaptureSkillFrontmatter = {
+  const frontmatter: SkillFrontmatter = {
     name: out.name,
     description: out.description,
   };

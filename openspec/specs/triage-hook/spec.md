@@ -3,7 +3,6 @@
 ## Purpose
 
 `triage-hook` is the wire that turns the rest of Strata's machinery — tools, callbacks, capabilities, capture skill — into something the agent actually sees on every turn. It registers a `before_prompt_build` handler that pulls the user's recent history from `messages`, the live capability registry, and the session's pending events into a `TriageInput`, classifies via `runtime.llmClient` (default: `HeuristicLLMClient`), and returns a `prependSystemContext` (static Strata block, cacheable across turns) plus a `prependContext` (per-turn routing recommendation keyed to the detected intent). A triage failure logs at `warn` and returns `{}` so the agent run is never blocked by a classifier bug; `chitchat` returns an empty `prependContext` so prompt-cache hits stay clean. The hook is the operational bridge between the capture loop's code and the agent's runtime.
-
 ## Requirements
 ### Requirement: Runtime exposes an `LLMClient` instance
 
@@ -42,10 +41,10 @@ The system SHALL export `buildTriageInput(deps): Promise<TriageInput>` where `de
 
 The system SHALL export `renderRoutingContext(triage, input): { prependSystemContext: string; prependContext: string }`.
 
-- `prependSystemContext` is the **static** Strata-routing block: lists active capabilities, names all 6 `strata_*` tools, and describes the `pending → committed | superseded | abandoned` state machine.
+- `prependSystemContext` is the **static** Strata-routing block: lists active capabilities, names all 7 `strata_*` tools (the six event tools plus `strata_propose_capability`), and describes the `pending → committed | superseded | abandoned` state machine.
 - `prependContext` is the **per-turn** block: one of five templates keyed by `triage.kind`. The `chitchat` kind returns an empty string.
 
-Each non-chitchat template MUST mention the recommended tool names by their `strata_*` identifiers so the agent can call them without consulting the skill file.
+Each non-chitchat template MUST mention the recommended tool names by their `strata_*` identifiers so the agent can call them without consulting the skill file. The `build_request` template MUST point at the build skill and instruct the agent to call `strata_propose_capability` — it MUST NOT tell the agent that Build Bridge is unavailable.
 
 #### Scenario: Capture template names the right tools
 
@@ -62,10 +61,10 @@ Each non-chitchat template MUST mention the recommended tool names by their `str
 - **WHEN** `triage.kind = 'query'`
 - **THEN** `prependContext` contains `'strata_search_events'`
 
-#### Scenario: Build request template explains the bridge is not yet shipped
+#### Scenario: Build request template routes to `strata_propose_capability`
 
 - **WHEN** `triage.kind = 'build_request'`
-- **THEN** `prependContext` mentions that Build Bridge is not yet available and the agent should respond conversationally
+- **THEN** `prependContext` contains `'strata_propose_capability'` and references the build skill; it MUST NOT claim that Build Bridge is unavailable
 
 #### Scenario: Chitchat returns empty prependContext
 

@@ -1,0 +1,10 @@
+{
+  "id": "strata",
+  "version": "0.1.0",
+  "channels": [],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "name": "strata",
+  "version": "0.1.0",
+  "description": "Strata — a local-first personal data sedimentation and software forge platform (OpenClaw plugin)",
+  "license": "MIT",
+  "author": "seven <shhcheng777@gmail.com>",
+  "type": "module",
+  "private": true,
+  "files": [
+    "src/",
+    "!src/**/*.test.ts",
+    "index.ts",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write \"src/**/*.{ts,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,json}\""
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.5.0",
+    "sqlite-vec": "^0.1.5",
+    "zod": "^4.0.0",
+    "json5": "^2.2.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.7.0",
+    "@vitest/coverage-v8": "^3.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "openclaw": "2026.3.23",
+    "prettier": "^3.3.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0"
+  },
+  "openclaw": {
+    "extensions": [
+      "./src/index.ts"
+    ],
+    "install": {
+      "defaultChoice": "local",
+      "minHostVersion": ">=2026.3.22"
+    }
+  }
+}

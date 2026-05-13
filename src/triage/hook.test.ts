@@ -59,13 +59,14 @@ describe("renderRoutingContext", () => {
     expect(r.prependContext).toContain("strata_supersede_event");
   });
 
-  it("query template references both query_table and search_events", () => {
+  it("query template references query_table, search_events, and render_dashboard", () => {
     const r = renderRoutingContext(
       { kind: "query", confidence: 0.7, reasoning: "how much" },
       makeInput(),
     );
     expect(r.prependContext).toContain("strata_query_table");
     expect(r.prependContext).toContain("strata_search_events");
+    expect(r.prependContext).toContain("strata_render_dashboard");
     expect(r.prependContext).not.toContain("strata_create_pending_event");
   });
 
@@ -114,6 +115,7 @@ describe("renderRoutingContext", () => {
       "strata_propose_capability",
       "strata_run_build",
       "strata_query_table",
+      "strata_render_dashboard",
     ]) {
       expect(r.prependSystemContext).toContain(name);
     }

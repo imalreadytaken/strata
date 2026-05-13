@@ -3,7 +3,6 @@
 ## Purpose
 
 `capability-loader` is the boot-time mechanism that turns on-disk capabilities into live registry entries. It walks the plugin's bundled `src/capabilities/` root and the user's `<dataDir>/capabilities/` root, picks the active version per capability (`current/` symlink wins; otherwise the highest `v<N>/`), validates each `meta.json` against the AGENTS.md contract, applies the capability's migrations through an isolated ledger (`_strata_capability_migrations` keyed `(capability_name, filename)` so two capabilities can ship `001_init.sql` without colliding), and upserts a row in `capability_registry` with `status='active'`. The output `CapabilityRegistry` is hung off `StrataRuntime.capabilities` for the pipeline runner (next capability) to consume. The loader deliberately stays away from `import()`-ing the capability's `pipeline.ts` — keeping side-effects to JSON + SQL means a buggy pipeline can't crash boot.
-
 ## Requirements
 ### Requirement: `meta.json` schema
 
@@ -109,6 +108,7 @@ The system SHALL expose `loadCapabilities(deps): Promise<CapabilityRegistry>` th
 - For each: read+parse `meta.json` (JSON5), validate with `CapabilityMetaSchema`.
 - Apply migrations via `applyCapabilityMigrations(db, name, <path>/migrations/)`.
 - Upsert `capability_registry`: existing rows get `status='active'` + updated `version`/`meta_path`/`primary_table` (preserving `created_at`); new rows are inserted with `created_at=now()`.
+- When `deps.dashboardRegistry` is provided AND `<path>/dashboard.json` exists, parse it with JSON5, validate against `DashboardSchema`, and register the result into the dashboard registry under the capability's name. Missing `dashboard.json` is silently skipped; a malformed file aborts boot with `STRATA_E_CAPABILITY_INVALID`.
 - Return a `Map<string, LoadedCapability>` keyed by capability name.
 
 An invalid `meta.json` (parse error or schema mismatch) MUST throw `STRATA_E_CAPABILITY_INVALID` and abort boot.
@@ -132,6 +132,16 @@ An invalid `meta.json` (parse error or schema mismatch) MUST throw `STRATA_E_CAP
 
 - **WHEN** bundled has `expenses/v1/`, user has `expenses/v2/`, and `loadCapabilities` runs
 - **THEN** the resulting registry's `expenses` entry has `version=2` and its `meta_path` resolves into the user root
+
+#### Scenario: Dashboard.json registers when present
+
+- **WHEN** `expenses/v1/dashboard.json` exists alongside `meta.json` and `loadCapabilities` runs with a `dashboardRegistry` in deps
+- **THEN** the dashboard registry contains an entry for `'expenses'` whose widgets match the file's parsed widgets
+
+#### Scenario: Missing dashboard.json does not abort boot
+
+- **WHEN** a capability has no `dashboard.json` on disk
+- **THEN** `loadCapabilities` completes successfully and the dashboard registry has no entry for that capability
 
 ### Requirement: `StrataRuntime` exposes the loaded registry
 

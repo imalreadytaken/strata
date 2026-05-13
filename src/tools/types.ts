@@ -9,6 +9,7 @@
 import type { CapabilityRegistry } from "../capabilities/types.js";
 import type { PipelineToolDeps } from "../capabilities/pipeline_runner.js";
 import type { Logger } from "../core/logger.js";
+import type { DashboardRegistry } from "../dashboard/registry.js";
 import type { BuildsRepository } from "../db/repositories/builds.js";
 import type { CapabilityHealthRepository } from "../db/repositories/capability_health.js";
 import type { CapabilityRegistryRepository } from "../db/repositories/capability_registry.js";
@@ -61,6 +62,17 @@ export interface QueryToolDeps {
   logger: Logger;
 }
 
+/**
+ * Deps the `strata_render_dashboard` tool needs. Optional so harnesses
+ * without a dashboard registry can omit.
+ */
+export interface DashboardToolDeps {
+  db: Database.Database;
+  capabilityRegistryRepo: CapabilityRegistryRepository;
+  dashboardRegistry: DashboardRegistry;
+  logger: Logger;
+}
+
 /** Dependency bag every tool factory accepts. */
 export interface EventToolDeps {
   rawEventsRepo: RawEventsRepository;
@@ -84,4 +96,9 @@ export interface EventToolDeps {
    * from runtime.
    */
   queryDeps?: QueryToolDeps;
+  /**
+   * Dashboard-tool deps for `strata_render_dashboard`. Optional; production
+   * wires from runtime.
+   */
+  dashboardDeps?: DashboardToolDeps;
 }

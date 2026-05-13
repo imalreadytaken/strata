@@ -3,7 +3,6 @@
 ## Purpose
 
 `expenses-capability` is Strata's first vertical-slice capability. It ships at `src/capabilities/expenses/v1/`: a `meta.json` matching the AGENTS.md schema, a `001_init.sql` migration that creates the `expenses` business table with every required field plus domain columns (`amount_minor` INTEGER, `currency` TEXT default `'CNY'`, `merchant` TEXT, `category` TEXT with CHECK enum), a `pipeline.ts` whose `ingest(rawEvent, deps)` parses `extracted_data` via Zod and inserts one row, and an `extract_prompt.md` with worked examples for the agent. The capability exists primarily as the validation pass for the loader, runner, and AGENTS.md constitution: if any of those are wrong, this capability's tests are the first place it shows up. Once the user sends "今天买了 Blue Bottle ¥45", the full chain — capture skill → tool → pending → confirm → commit → pipeline → expenses row — runs through code that has been tested at every layer.
-
 ## Requirements
 ### Requirement: `expenses` business table satisfies every AGENTS.md business-row contract
 
@@ -87,4 +86,24 @@ The capability's `meta.json` MUST validate against `CapabilityMetaSchema` and re
 
 - **WHEN** `bootRuntime(api)` runs against a fresh DB in a tmp HOME
 - **THEN** `runtime.capabilities.has('expenses') === true` and `runtime.capabilities.get('expenses')!.meta.primary_table === 'expenses'`
+
+### Requirement: `expenses` ships an example `dashboard.json` exercising both KPI and list widgets
+
+The system SHALL ship `src/capabilities/expenses/v1/dashboard.json` declaring at least three widgets:
+
+1. A KPI widget titled with a Chinese label (e.g. `本月支出`) with `format='money'` and `query.aggregate.fn='sum'` over `amount_minor`.
+2. A KPI widget titled `本月笔数` with `format='count'` and `query.aggregate.fn='count'`.
+3. A list widget (`kind='list'`) capped at 5 rows ordered by `amount_minor desc`.
+
+The file MUST validate against `DashboardSchema` and register under capability `'expenses'` after `bootRuntime`.
+
+#### Scenario: Booting registers expenses widgets
+
+- **WHEN** `bootRuntime(api)` runs against a fresh DB
+- **THEN** `runtime.dashboardRegistry.get('expenses')` returns a `Dashboard` whose `widgets.length >= 3`
+
+#### Scenario: Rendering the expenses dashboard produces non-empty markdown
+
+- **WHEN** `renderDashboard(deps, 'expenses')` runs with the registry populated by `bootRuntime`
+- **THEN** the returned `markdown` contains `*expenses*` (or an equivalent header) and at least one widget bullet
 

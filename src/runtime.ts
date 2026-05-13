@@ -24,6 +24,7 @@ import {
 } from "./capabilities/index.js";
 import { loadConfig, type StrataConfig } from "./core/config.js";
 import { createLogger, type Logger } from "./core/logger.js";
+import { DashboardRegistry } from "./dashboard/registry.js";
 import type DatabaseType from "better-sqlite3";
 
 import {
@@ -77,6 +78,8 @@ export interface StrataRuntime {
   capabilityHealthRepo: CapabilityHealthRepository;
   pendingBuffer: PendingBuffer;
   capabilities: CapabilityRegistry;
+  /** In-memory registry of per-capability dashboards (`dashboard.json`). */
+  dashboardRegistry: DashboardRegistry;
   /**
    * Intent classifier backend. Defaults to `HeuristicLLMClient`; future
    * change can swap in an LLM-backed implementation.
@@ -140,12 +143,14 @@ export async function bootRuntime(api: OpenClawPluginApi): Promise<StrataRuntime
       });
 
       const capabilityRegistryRepo = new CapabilityRegistryRepository(db);
+      const dashboardRegistry = new DashboardRegistry(logger);
       const capabilities = await loadCapabilities({
         db,
         repo: capabilityRegistryRepo,
         bundledRoot: BUNDLED_CAPABILITIES_ROOT,
         userRoot: config.paths.capabilitiesDir,
         logger,
+        dashboardRegistry,
       });
 
       return {
@@ -162,6 +167,7 @@ export async function bootRuntime(api: OpenClawPluginApi): Promise<StrataRuntime
         capabilityHealthRepo: new CapabilityHealthRepository(db),
         pendingBuffer,
         capabilities,
+        dashboardRegistry,
         llmClient: resolveLLMClient(config, { logger }).client,
         agentsMdSource: loadAgentsMdSource(),
       } satisfies StrataRuntime;

@@ -21,6 +21,7 @@ import { commitEventTool } from "./commit_event.js";
 import { createPendingEventTool } from "./create_pending_event.js";
 import { proposeCapabilityTool } from "./propose_capability.js";
 import { queryTableTool } from "./query_table.js";
+import { renderDashboardTool } from "./render_dashboard.js";
 import { runBuildTool } from "./run_build.js";
 import { searchEventsTool } from "./search_events.js";
 import { supersedeEventTool } from "./supersede_event.js";
@@ -85,9 +86,16 @@ export {
   type QueryTableDetails,
   queryTableSchema,
 } from "./query_table.js";
+export {
+  renderDashboardTool,
+  type RenderDashboardInput,
+  type RenderDashboardDetails,
+  renderDashboardSchema,
+} from "./render_dashboard.js";
 export type {
   AnyAgentTool,
   BuildToolDeps,
+  DashboardToolDeps,
   EventToolDeps,
   QueryToolDeps,
 } from "./types.js";
@@ -111,6 +119,7 @@ export function buildEventTools(
     proposeCapabilityTool(deps),
     runBuildTool(deps),
     queryTableTool(deps),
+    renderDashboardTool(deps),
   ];
 }
 
@@ -161,6 +170,12 @@ export function registerEventTools(
       queryDeps: {
         db: runtime.db,
         capabilityRegistryRepo: runtime.capabilityRegistryRepo,
+        logger: runtime.logger,
+      },
+      dashboardDeps: {
+        db: runtime.db,
+        capabilityRegistryRepo: runtime.capabilityRegistryRepo,
+        dashboardRegistry: runtime.dashboardRegistry,
         logger: runtime.logger,
       },
     };

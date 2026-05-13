@@ -92,6 +92,7 @@ const STRATA_TOOLS = [
   "strata_propose_capability",
   "strata_run_build",
   "strata_query_table",
+  "strata_render_dashboard",
 ] as const;
 
 function renderStaticBlock(input: TriageInput): string {
@@ -114,6 +115,7 @@ function renderStaticBlock(input: TriageInput): string {
     `- ${STRATA_TOOLS[6]} — record a user-driven build request in 'proposals'`,
     `- ${STRATA_TOOLS[7]} — dispatch a 'pending' or 'approved' proposal through Build Bridge`,
     `- ${STRATA_TOOLS[8]} — read-only structured query over a capability's business table`,
+    `- ${STRATA_TOOLS[9]} — render a capability's KPI / list widgets as Telegram-ready markdown`,
     "",
     "Raw event state machine: pending → committed | superseded | abandoned.",
   ].join("\n");
@@ -156,7 +158,8 @@ function renderPerTurnBlock(triage: TriageResult, input: TriageInput): string {
         "Tool sequence:",
         "- For business-table aggregates / filters / top-N: strata_query_table (supply { capability_name, filter?, since?, until?, order_by?, limit?, aggregate? }).",
         "- For raw-event ledger lookups (find the originating event): strata_search_events (LIKE on source_summary + type/status/time filters).",
-        "Pick by what the user is asking: a numeric aggregate or filtered listing → strata_query_table; finding the specific event behind a memory → strata_search_events. Never create or mutate events in a query flow.",
+        "- For dashboard / overview asks (\"show me my X dashboard\", \"this month's KPIs\"): strata_render_dashboard({ capability_name: 'X' }) — then quote `details.markdown` verbatim to the user.",
+        "Pick by what the user is asking: a numeric aggregate or filtered listing → strata_query_table; finding the specific event behind a memory → strata_search_events; an at-a-glance overview → strata_render_dashboard. Never create or mutate events in a query flow.",
       ].join("\n");
     case "build_request":
       return [

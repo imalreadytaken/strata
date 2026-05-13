@@ -15,6 +15,8 @@ import JSON5 from "json5";
 
 import { ValidationError } from "../core/errors.js";
 import type { Logger } from "../core/logger.js";
+import { loadCapabilityDashboard } from "../dashboard/loader.js";
+import type { DashboardRegistry } from "../dashboard/registry.js";
 import type { CapabilityRegistryRepository } from "../db/repositories/capability_registry.js";
 import { discoverCapabilities } from "./discover.js";
 import { applyCapabilityMigrations } from "./migrations.js";
@@ -32,6 +34,12 @@ export interface LoadCapabilitiesDeps {
   /** Path to `config.paths.capabilitiesDir`. May not exist on first run. */
   userRoot: string;
   logger: Logger;
+  /**
+   * Optional dashboard registry. When provided, each capability's
+   * `dashboard.json` (if present) is parsed and registered. Tests that don't
+   * care about dashboards may omit it.
+   */
+  dashboardRegistry?: DashboardRegistry;
 }
 
 export async function loadCapabilities(
@@ -99,6 +107,15 @@ export async function loadCapabilities(
     }
 
     await upsertRegistryRow(deps, meta, entry.metaPath);
+
+    if (deps.dashboardRegistry) {
+      await loadCapabilityDashboard({
+        dir: entry.path,
+        name: meta.name,
+        registry: deps.dashboardRegistry,
+        logger: deps.logger,
+      });
+    }
 
     const loaded: LoadedCapability = {
       meta,

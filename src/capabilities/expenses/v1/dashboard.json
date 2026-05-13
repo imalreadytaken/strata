@@ -1,0 +1,37 @@
+{
+  // Strata dashboard.json — three example widgets for the expenses capability.
+  // Loaded by `src/dashboard/loader.ts` at boot, validated against `DashboardSchema`.
+  //
+  // Note: V1 dashboards take absolute `since` strings. A future change can wire
+  // dynamic helpers (e.g. `{{this_month_start}}`) in the renderer.
+  widgets: [
+    {
+      kind: "kpi",
+      title: "本月支出",
+      format: "money",
+      query: {
+        // Sum across all expenses; the agent can render again with a tighter
+        // `since` once it has access to dynamic-date helpers.
+        aggregate: { fn: "sum", column: "amount_minor" },
+      },
+    },
+    {
+      kind: "kpi",
+      title: "本月笔数",
+      format: "count",
+      query: {
+        aggregate: { fn: "count", column: "id" },
+      },
+    },
+    {
+      kind: "list",
+      title: "Top 5 expenses",
+      format: "text",
+      query: {
+        order_by: "amount_minor",
+        order_direction: "desc",
+        limit: 5,
+      },
+    },
+  ],
+}

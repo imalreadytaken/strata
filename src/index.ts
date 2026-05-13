@@ -18,8 +18,10 @@ import { registerEventTools } from "./tools/index.js";
  *
  * Future phases attach more registrations here:
  *
- *   P2 — strata_* tools (done), inline-keyboard callback handler, pending-buffer
- *        timeout loop (done), triage classifier, capture skill
+ *   P2 — strata_* tools (done), inline-keyboard callback handler (done),
+ *        pending-buffer timeout loop (done), triage classifier (done — see
+ *        `src/triage/`; not yet wired into a hook, that lands in P5), capture
+ *        skill markdown (done — see `src/skills/capture/SKILL.md`)
  *   P3 — capability loader + pipeline runner
  *   P4 — Build Bridge entry points (build skill, progress forwarder)
  *   P5 — Reflect Agent cron + push handler

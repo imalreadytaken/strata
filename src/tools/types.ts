@@ -51,6 +51,16 @@ export interface AnyAgentTool {
   ) => Promise<ToolResult<unknown>>;
 }
 
+/**
+ * Deps the `strata_query_table` tool needs. Optional so unit-test harnesses
+ * that don't exercise queries can omit.
+ */
+export interface QueryToolDeps {
+  db: Database.Database;
+  capabilityRegistryRepo: CapabilityRegistryRepository;
+  logger: Logger;
+}
+
 /** Dependency bag every tool factory accepts. */
 export interface EventToolDeps {
   rawEventsRepo: RawEventsRepository;
@@ -69,4 +79,9 @@ export interface EventToolDeps {
    * + the heuristic-only paths don't have to populate the full bag.
    */
   buildDeps?: BuildToolDeps;
+  /**
+   * Query-tool deps for `strata_query_table`. Optional; production wires
+   * from runtime.
+   */
+  queryDeps?: QueryToolDeps;
 }

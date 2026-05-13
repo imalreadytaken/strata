@@ -19,6 +19,7 @@ import { applyMigrations } from "../db/migrations.js";
 import { SYSTEM_MIGRATIONS_DIR } from "../db/index.js";
 import {
   CapabilityHealthRepository,
+  CapabilityRegistryRepository,
   MessagesRepository,
   ProposalsRepository,
   RawEventsRepository,
@@ -34,6 +35,10 @@ export interface TestHarness {
   rawEventsRepo: RawEventsRepository;
   proposalsRepo: ProposalsRepository;
   capabilityHealthRepo: CapabilityHealthRepository;
+  /** Minimal runtime-shaped stand-in for tests that need to seed registry rows. */
+  runtimeStub: {
+    capabilityRegistryRepo: CapabilityRegistryRepository;
+  };
   pendingBuffer: PendingBuffer;
   deps: EventToolDeps & { db: Database };
   /** Insert a `messages` row and return its id; handy for satisfying FK constraints. */
@@ -63,6 +68,7 @@ export function makeHarness(opts: MakeHarnessOpts = {}): TestHarness {
   const rawEventsRepo = new RawEventsRepository(db);
   const proposalsRepo = new ProposalsRepository(db);
   const capabilityHealthRepo = new CapabilityHealthRepository(db);
+  const capabilityRegistryRepo = new CapabilityRegistryRepository(db);
   const pendingBuffer = new PendingBuffer({
     stateFile: path.join(tmp, "pending_buffer.json"),
     logger,
@@ -88,6 +94,7 @@ export function makeHarness(opts: MakeHarnessOpts = {}): TestHarness {
     rawEventsRepo,
     proposalsRepo,
     capabilityHealthRepo,
+    runtimeStub: { capabilityRegistryRepo },
     pendingBuffer,
     deps,
     async insertMessage(s = sessionId, content = "x"): Promise<number> {

@@ -20,6 +20,7 @@ import { abandonEventTool } from "./abandon_event.js";
 import { commitEventTool } from "./commit_event.js";
 import { createPendingEventTool } from "./create_pending_event.js";
 import { proposeCapabilityTool } from "./propose_capability.js";
+import { queryTableTool } from "./query_table.js";
 import { runBuildTool } from "./run_build.js";
 import { searchEventsTool } from "./search_events.js";
 import { supersedeEventTool } from "./supersede_event.js";
@@ -78,7 +79,18 @@ export {
   type RunBuildToolDetails,
   runBuildSchema,
 } from "./run_build.js";
-export type { AnyAgentTool, BuildToolDeps, EventToolDeps } from "./types.js";
+export {
+  queryTableTool,
+  type QueryTableInput,
+  type QueryTableDetails,
+  queryTableSchema,
+} from "./query_table.js";
+export type {
+  AnyAgentTool,
+  BuildToolDeps,
+  EventToolDeps,
+  QueryToolDeps,
+} from "./types.js";
 
 /**
  * Build the six tool objects for a given session-bound deps bundle. Exported
@@ -98,6 +110,7 @@ export function buildEventTools(
     searchEventsTool(deps),
     proposeCapabilityTool(deps),
     runBuildTool(deps),
+    queryTableTool(deps),
   ];
 }
 
@@ -144,6 +157,11 @@ export function registerEventTools(
         buildsDir: runtime.config.paths.buildsDir,
         userCapabilitiesDir: runtime.config.paths.capabilitiesDir,
         maxTurnsPerPhase: 80,
+      },
+      queryDeps: {
+        db: runtime.db,
+        capabilityRegistryRepo: runtime.capabilityRegistryRepo,
+        logger: runtime.logger,
       },
     };
     // Cast our locally-shaped `AnyAgentTool[]` to the SDK's deeper typed

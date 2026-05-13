@@ -13,7 +13,7 @@ describe("registerEventTools", () => {
     await h.teardown();
   });
 
-  it("buildEventTools returns eight tools with the documented names", () => {
+  it("buildEventTools returns nine tools with the documented names", () => {
     const tools = buildEventTools(h.deps);
     expect(tools.map((t) => t.name)).toEqual([
       "strata_create_pending_event",
@@ -24,6 +24,7 @@ describe("registerEventTools", () => {
       "strata_search_events",
       "strata_propose_capability",
       "strata_run_build",
+      "strata_query_table",
     ]);
     for (const tool of tools) {
       expect(tool.parameters).toBeDefined();
@@ -31,7 +32,7 @@ describe("registerEventTools", () => {
     }
   });
 
-  it("registerTool is called once and the factory yields eight tools", () => {
+  it("registerTool is called once and the factory yields nine tools", () => {
     const calls: unknown[] = [];
     const fakeApi = {
       registerTool: vi.fn((toolOrFactory: unknown) => {
@@ -70,13 +71,14 @@ describe("registerEventTools", () => {
     registerEventTools(fakeApi, runtime);
     expect((fakeApi.registerTool as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(1);
     const factoryResult = calls[0] as Array<{ name: string }>;
-    expect(factoryResult).toHaveLength(8);
+    expect(factoryResult).toHaveLength(9);
     expect(factoryResult.map((t) => t.name).sort()).toEqual(
       [
         "strata_abandon_event",
         "strata_commit_event",
         "strata_create_pending_event",
         "strata_propose_capability",
+        "strata_query_table",
         "strata_run_build",
         "strata_search_events",
         "strata_supersede_event",

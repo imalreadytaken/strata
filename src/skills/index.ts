@@ -29,6 +29,7 @@ export interface LoadedSkill {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CAPTURE_SKILL_PATH = path.join(__dirname, "capture", "SKILL.md");
 const BUILD_SKILL_PATH = path.join(__dirname, "build", "SKILL.md");
+const QUERY_SKILL_PATH = path.join(__dirname, "query", "SKILL.md");
 
 export async function loadCaptureSkill(): Promise<LoadedSkill> {
   const raw = await readFile(CAPTURE_SKILL_PATH, "utf8");
@@ -37,6 +38,11 @@ export async function loadCaptureSkill(): Promise<LoadedSkill> {
 
 export async function loadBuildSkill(): Promise<LoadedSkill> {
   const raw = await readFile(BUILD_SKILL_PATH, "utf8");
+  return parseSkillFile(raw);
+}
+
+export async function loadQuerySkill(): Promise<LoadedSkill> {
+  const raw = await readFile(QUERY_SKILL_PATH, "utf8");
   return parseSkillFile(raw);
 }
 

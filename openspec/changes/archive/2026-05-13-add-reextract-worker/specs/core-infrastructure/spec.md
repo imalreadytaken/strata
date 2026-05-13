@@ -1,9 +1,5 @@
-# core-infrastructure Specification
+## MODIFIED Requirements
 
-## Purpose
-
-`core-infrastructure` is the foundation every other Strata module depends on: a typed view of user configuration (with a hard-coded refusal to ever store provider credentials — those live in OpenClaw), a structured JSON logger that writes to `~/.strata/logs/plugin.log`, and a typed error hierarchy with stable `code` strings callers can match on. The surface is intentionally tiny — no async log shipping, no rotation, no metrics — so that adding a dependency on it never costs anything elsewhere.
-## Requirements
 ### Requirement: Config loader returns typed Strata configuration
 
 The system SHALL expose a `loadConfig(): Promise<StrataConfig>` function that reads `~/.strata/config.json` (JSON5 syntax) and returns a Zod-validated, fully-typed configuration object.
@@ -62,43 +58,3 @@ The loader MUST expand a leading `~/` in path values to the user's home director
 
 - **WHEN** a config file omits the `reextract` field entirely
 - **THEN** the loaded config has `reextract.enabled === true`, `reextract.poll_interval_seconds === 30`, `reextract.checkpoint_every_rows === 20`, `reextract.max_concurrent_jobs === 1`
-
-### Requirement: Structured logger with levels and child loggers
-
-The system SHALL expose a `createLogger(options): Logger` factory that returns a logger with methods `debug(msg, fields?)`, `info(msg, fields?)`, `warn(msg, fields?)`, `error(msg, fields?)`, plus `child(bindings): Logger` for sub-module tagging.
-
-Each emitted record MUST be a single line of JSON containing at least `ts` (ISO 8601 with TZ), `level`, `msg`, `module` (from child bindings), and any structured `fields` merged in. Records MUST be appended to `<logsDir>/plugin.log` (created if needed) and additionally written to `stderr` when `toStderr === true`.
-
-The logger MUST silently drop records below the configured minimum level.
-
-#### Scenario: Emits structured JSON with required fields
-
-- **WHEN** `logger.info('hello', { user: 'seven' })` is called on a logger whose configured level is `info`
-- **THEN** a single line of valid JSON is appended to `plugin.log` containing `ts`, `level: 'info'`, `msg: 'hello'`, and `user: 'seven'`
-
-#### Scenario: Child logger inherits and extends bindings
-
-- **WHEN** `logger.child({ module: 'db' }).info('connected')` is called
-- **THEN** the emitted record contains `module: 'db'` in addition to any bindings on the parent
-
-#### Scenario: Drops records below configured level
-
-- **WHEN** `logger.debug('noise')` is called on a logger whose level is `info`
-- **THEN** nothing is written to `plugin.log` or `stderr`
-
-### Requirement: Typed error hierarchy with stable error codes
-
-The system SHALL expose a `StrataError` base class extending `Error`, plus the concrete subclasses `ConfigError`, `DatabaseError`, `ValidationError`, `NotFoundError`, and `StateMachineError`. Each subclass MUST set a stable `code` string (e.g., `STRATA_E_CONFIG_INVALID`) and MUST support an optional `cause` for chaining.
-
-Stack traces MUST be preserved across `cause` chains. The base class MUST expose a `toJSON()` method returning `{ name, code, message, cause? }` suitable for logging.
-
-#### Scenario: Subclass exposes its declared code
-
-- **WHEN** `new ConfigError('STRATA_E_CONFIG_INVALID', 'bad value')` is constructed
-- **THEN** the resulting instance satisfies `err instanceof StrataError`, `err instanceof ConfigError`, `err.code === 'STRATA_E_CONFIG_INVALID'`, and `err.name === 'ConfigError'`
-
-#### Scenario: Cause chain is preserved on JSON serialization
-
-- **WHEN** a `DatabaseError` is constructed with `{ cause: new Error('disk full') }` and `toJSON()` is called
-- **THEN** the returned object includes a `cause` field with the original error's message
-

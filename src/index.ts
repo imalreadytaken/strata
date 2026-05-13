@@ -3,6 +3,11 @@ import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { registerStrataCallbacks } from "./callbacks/index.js";
 import { installMessageHooks } from "./hooks/index.js";
 import { startPendingTimeoutLoop } from "./pending_buffer/index.js";
+import {
+  defaultRegistry as defaultReextractRegistry,
+  deriveExistingStrategy,
+  startReextractWorker,
+} from "./reextract/index.js";
 import { handleReflectCallback } from "./reflect/callback.js";
 import { startReflectAgent } from "./reflect/cron.js";
 import { bootRuntime } from "./runtime.js";
@@ -91,6 +96,28 @@ export default {
           logger: runtime.logger,
         }),
       });
+
+      // Register the default reextract strategies (idempotent register call
+      // for the heuristic worker; LLM strategies land in a later change).
+      try {
+        defaultReextractRegistry.register(deriveExistingStrategy);
+      } catch {
+        // already registered (idempotent re-boot); fine.
+      }
+      runtime.stopReextract = startReextractWorker(
+        {
+          db: runtime.db,
+          capabilityRegistryRepo: runtime.capabilityRegistryRepo,
+          reextractJobsRepo: runtime.reextractJobsRepo,
+          schemaEvolutionsRepo: runtime.schemaEvolutionsRepo,
+          logger: runtime.logger,
+        },
+        {
+          enabled: runtime.config.reextract.enabled,
+          intervalMs:
+            runtime.config.reextract.poll_interval_seconds * 1000,
+        },
+      );
       runtime.logger.info("Strata plugin registered", {
         db_path: runtime.config.database.path,
       });

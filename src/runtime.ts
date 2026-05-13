@@ -84,6 +84,8 @@ export interface StrataRuntime {
   llmClient: LLMClient;
   /** Reflect cron stop handle, populated when the agent is started. */
   stopReflect?: () => void;
+  /** Re-extraction worker stop handle, populated when the worker is started. */
+  stopReextract?: () => void;
   /**
    * AGENTS.md text used by Build Bridge to seed each workdir's
    * constitution. Loaded at boot from `<plugin>/openspec/AGENTS.md`.

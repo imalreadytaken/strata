@@ -70,6 +70,19 @@ export const ConfigSchema = z
       })
       .strict()
       .prefault({}),
+    /**
+     * Re-extraction worker configuration. The worker drains
+     * `reextract_jobs` rows; one job at a time.
+     */
+    reextract: z
+      .object({
+        enabled: z.boolean().default(true),
+        poll_interval_seconds: z.number().int().positive().default(30),
+        checkpoint_every_rows: z.number().int().positive().default(20),
+        max_concurrent_jobs: z.number().int().positive().default(1),
+      })
+      .strict()
+      .prefault({}),
   })
   .strict();
 

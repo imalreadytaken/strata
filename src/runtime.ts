@@ -35,6 +35,7 @@ import {
   ReextractJobsRepository,
   SchemaEvolutionsRepository,
 } from "./db/repositories/index.js";
+import { PendingBuffer } from "./pending_buffer/index.js";
 
 export interface StrataRuntime {
   config: Readonly<StrataConfig>;
@@ -48,6 +49,7 @@ export interface StrataRuntime {
   buildsRepo: BuildsRepository;
   proposalsRepo: ProposalsRepository;
   capabilityHealthRepo: CapabilityHealthRepository;
+  pendingBuffer: PendingBuffer;
 }
 
 let cached: Promise<StrataRuntime> | undefined;
@@ -87,6 +89,15 @@ export async function bootRuntime(api: OpenClawPluginApi): Promise<StrataRuntime
           skipped_count: summary.skipped.length,
         });
 
+      const pendingBuffer = new PendingBuffer({
+        stateFile: path.join(
+          config.paths.dataDir,
+          ".strata-state",
+          "pending_buffer.json",
+        ),
+        logger,
+      });
+
       return {
         config,
         db,
@@ -99,6 +110,7 @@ export async function bootRuntime(api: OpenClawPluginApi): Promise<StrataRuntime
         buildsRepo: new BuildsRepository(db),
         proposalsRepo: new ProposalsRepository(db),
         capabilityHealthRepo: new CapabilityHealthRepository(db),
+        pendingBuffer,
       } satisfies StrataRuntime;
     } catch (err) {
       // Failed boots must NOT poison the cache; later attempts (e.g. after

@@ -1,6 +1,7 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 
 import { installMessageHooks } from "./hooks/index.js";
+import { startPendingTimeoutLoop } from "./pending_buffer/index.js";
 import { bootRuntime } from "./runtime.js";
 
 /**
@@ -49,6 +50,12 @@ export default {
       const runtime = await bootRuntime(api);
       installMessageHooks(api, {
         messagesRepo: runtime.messagesRepo,
+        logger: runtime.logger,
+      });
+      startPendingTimeoutLoop({
+        pendingBuffer: runtime.pendingBuffer,
+        rawEventsRepo: runtime.rawEventsRepo,
+        timeoutMinutes: runtime.config.pending.timeoutMinutes,
         logger: runtime.logger,
       });
       runtime.logger.info("Strata plugin registered", {

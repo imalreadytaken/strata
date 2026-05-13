@@ -40,8 +40,9 @@ import {
   ReextractJobsRepository,
   SchemaEvolutionsRepository,
 } from "./db/repositories/index.js";
+import { resolveLLMClient } from "./llm/pi_ai_client.js";
 import { PendingBuffer } from "./pending_buffer/index.js";
-import { HeuristicLLMClient, type LLMClient } from "./triage/index.js";
+import type { LLMClient } from "./triage/index.js";
 
 const BUNDLED_CAPABILITIES_ROOT = fileURLToPath(
   new URL("./capabilities/", import.meta.url),
@@ -137,7 +138,7 @@ export async function bootRuntime(api: OpenClawPluginApi): Promise<StrataRuntime
         capabilityHealthRepo: new CapabilityHealthRepository(db),
         pendingBuffer,
         capabilities,
-        llmClient: new HeuristicLLMClient(),
+        llmClient: resolveLLMClient(config, { logger }).client,
       } satisfies StrataRuntime;
     } catch (err) {
       // Failed boots must NOT poison the cache; later attempts (e.g. after

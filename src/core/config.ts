@@ -56,6 +56,20 @@ export const ConfigSchema = z
       })
       .strict()
       .prefault({}),
+    /**
+     * LLM model selection per logical purpose. `'auto'` keeps the heuristic
+     * fallback; `'<provider>/<modelId>'` opts in to a real pi-ai backend.
+     * Provider names must be one of pi-ai's `KnownProvider` set. AGENTS.md
+     * forbids storing API keys here; the key is read from environment.
+     */
+    models: z
+      .object({
+        fast: z.string().default("auto"),
+        smart: z.string().default("auto"),
+        coder: z.string().default("claude-code-cli"),
+      })
+      .strict()
+      .prefault({}),
   })
   .strict();
 

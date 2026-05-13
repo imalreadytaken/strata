@@ -76,10 +76,20 @@ describe("ConfigSchema defaults", () => {
     expect(cfg.paths.dataDir).toBe("~/.strata");
     expect(cfg.logging.level).toBe("info");
     expect(cfg.pending.timeoutMinutes).toBe(30);
+    expect(cfg.models.fast).toBe("auto");
+    expect(cfg.models.smart).toBe("auto");
+    expect(cfg.models.coder).toBe("claude-code-cli");
   });
 
   it("rejects unknown top-level keys", () => {
     expect(() => ConfigSchema.parse({ unknown: true })).toThrow();
+  });
+
+  it("accepts a real 'provider/modelId' in models.fast", () => {
+    const cfg = ConfigSchema.parse({
+      models: { fast: "anthropic/claude-haiku-4-5" },
+    });
+    expect(cfg.models.fast).toBe("anthropic/claude-haiku-4-5");
   });
 
   it("rejects an invalid log level", () => {

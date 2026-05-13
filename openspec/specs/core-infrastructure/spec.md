@@ -3,7 +3,6 @@
 ## Purpose
 
 `core-infrastructure` is the foundation every other Strata module depends on: a typed view of user configuration (with a hard-coded refusal to ever store provider credentials — those live in OpenClaw), a structured JSON logger that writes to `~/.strata/logs/plugin.log`, and a typed error hierarchy with stable `code` strings callers can match on. The surface is intentionally tiny — no async log shipping, no rotation, no metrics — so that adding a dependency on it never costs anything elsewhere.
-
 ## Requirements
 ### Requirement: Config loader returns typed Strata configuration
 
@@ -22,6 +21,9 @@ The schema MUST include at minimum:
 - `logging.level: 'debug' | 'info' | 'warn' | 'error'` (default `info`)
 - `logging.toStderr: boolean` (default `true` in dev, `false` otherwise)
 - `pending.timeoutMinutes: number` (default `30`)
+- `models.fast: string` (default `'auto'`) — `'auto'` keeps the heuristic LLM client; `'<provider>/<modelId>'` opts in to a real backend
+- `models.smart: string` (default `'auto'`) — reserved for the Reflect agent's pattern-analysis prompt
+- `models.coder: string` (default `'claude-code-cli'`) — reserved for Build Bridge's Claude Code subprocess
 
 The schema MUST forbid any key whose name matches `/api[_-]?key/i`, `/token/i`, or `/secret/i` at any depth, and the loader MUST throw `ConfigError` with code `STRATA_E_CONFIG_FORBIDDEN_KEY` if such a key is present.
 
@@ -46,6 +48,11 @@ The loader MUST expand a leading `~/` in path values to the user's home director
 
 - **WHEN** the config file contains a property named `api_key`, `apiKey`, `token`, or `secret` (case-insensitive) anywhere in the tree
 - **THEN** `loadConfig()` rejects with `ConfigError` whose `code === 'STRATA_E_CONFIG_FORBIDDEN_KEY'`
+
+#### Scenario: `models` field defaults are populated
+
+- **WHEN** a config file omits the `models` field entirely
+- **THEN** the loaded config has `models.fast === 'auto'`, `models.smart === 'auto'`, `models.coder === 'claude-code-cli'`
 
 ### Requirement: Structured logger with levels and child loggers
 

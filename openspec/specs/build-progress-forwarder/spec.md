@@ -3,7 +3,6 @@
 ## Purpose
 
 `build-progress-forwarder` converts Claude Code's stream-json events into IM-friendly progress updates. `formatStreamJsonEvent` is the pure per-event formatter; `BuildProgressForwarder` is the class that batches and flushes them on a timer. `onEvent` enqueues synchronously (cheap), the timer's flush drains up to `maxEventsPerBatch` lines and ships them as one joined message via the caller's `send`. `thinking` events drop. `send` rejections are warn-logged, not propagated. `stop()` flushes once before shutting down. The orchestrator (build coordinator) instantiates one forwarder per build, passes `onEvent` to `runClaudeCode`, and supplies the IM-side `send`.
-
 ## Requirements
 ### Requirement: `formatStreamJsonEvent` renders one event into a single line of text
 
@@ -82,4 +81,13 @@ The system SHALL export `BuildProgressForwarder` with:
 
 - **WHEN** the `send` callback rejects
 - **THEN** `flush()` resolves without throwing and the queue advances past the failed batch
+
+### Requirement: `BuildProgressForwarder.onPhase(name)` emits a phase prefix line
+
+The system SHALL extend `BuildProgressForwarder` with an `onPhase(name: string): void` method that enqueues a single line `'📍 phase: <name>'` for the next flush. Callers (the orchestrator) call this between phase transitions so the user sees clear phase boundaries alongside per-event noise.
+
+#### Scenario: onPhase enqueues a single line
+
+- **WHEN** `forwarder.onPhase('plan')` is called
+- **THEN** the next flush sends a message that includes `'📍 phase: plan'`
 

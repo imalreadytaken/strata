@@ -10,8 +10,6 @@ This directory contains the complete documentation set for **Strata** — a loca
 | **`PROJECT_RESEARCH_BACKGROUND.md`** | Collaborators / research archive | Why & What — research rationale, ecosystem survey, design decisions, decision log | ~1250 |
 | **`STRATA_PROJECT_GENESIS.md`** | Interviewer (5-7 min storytelling) | Project origin narrative — including v1 attempt, pivot, and self-corrections | ~420 |
 | **`STRATA_FIVE_PROTOCOLS_DEEP_DIVE.md`** | Interviewer (20-25 min technical deep-dive) | Detailed walkthrough of each protocol — problem, mechanism, key insights | ~700 |
-| **`STRATA_RESUME_PROFILE.md`** | Resume body + portfolio | Concise project description in two versions (concise + detailed) | ~210 |
-| **`IMPLEMENTATION_GUIDE.md`** | Implementer reference | OpenSpec + Claude Code generic workflow patterns (supplementary) | ~1220 |
 
 ## Deprecated documents
 
@@ -36,14 +34,14 @@ This directory contains the complete documentation set for **Strata** — a loca
                   Reads above and produces interview material:
                                     │
                                     ▼
-       ┌────────────────────────────┴────────────────────────────┐
-       │                            │                            │
-       ▼                            ▼                            ▼
-┌──────────────┐         ┌──────────────────┐         ┌──────────────────┐
-│RESUME_PROFILE│         │ PROJECT_GENESIS  │         │ PROTOCOLS_DEEP   │
-│ (10-second   │         │ (5-7 min story)  │         │ (20-25 min       │
-│  resume scan)│         │                  │         │  technical talk) │
-└──────────────┘         └──────────────────┘         └──────────────────┘
+                        ┌────────────┴────────────┐
+                        │                         │
+                        ▼                         ▼
+              ┌──────────────────┐      ┌──────────────────┐
+              │ PROJECT_GENESIS  │      │ PROTOCOLS_DEEP   │
+              │ (5-7 min story)  │      │ (20-25 min       │
+              │                  │      │  technical talk) │
+              └──────────────────┘      └──────────────────┘
 ```
 
 ## Reading order
@@ -51,16 +49,10 @@ This directory contains the complete documentation set for **Strata** — a loca
 ### For implementation
 1. Read `STRATA_SPEC.md` end-to-end (especially §2 architecture, §3 data model, §5 modules, §9 roadmap)
 2. Reference `PROJECT_RESEARCH_BACKGROUND.md` when you need to understand *why* a decision was made
-3. Use `IMPLEMENTATION_GUIDE.md` for generic OpenSpec + Claude Code patterns
 
 ### For interview prep
 1. Start with `STRATA_PROJECT_GENESIS.md` to internalize the project narrative
 2. Memorize the 5 protocols from `STRATA_FIVE_PROTOCOLS_DEEP_DIVE.md` — each has 3-5 minutes of material
-3. Use `STRATA_RESUME_PROFILE.md` (version A) for the resume body
-
-### For sharing
-- GitHub README: use `STRATA_RESUME_PROFILE.md` version B
-- Portfolio: link to all four Strata documents
 
 ## Tech stack
 

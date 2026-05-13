@@ -23,7 +23,6 @@ Strata captures the structured facts a person mentions in conversation (consumpt
 | [`docs/PROJECT_RESEARCH_BACKGROUND.md`](docs/PROJECT_RESEARCH_BACKGROUND.md) | **Why & What** — research, ecosystem survey, decision log |
 | [`docs/STRATA_PROJECT_GENESIS.md`](docs/STRATA_PROJECT_GENESIS.md) | Origin narrative (v1 attempt + pivot) |
 | [`docs/STRATA_FIVE_PROTOCOLS_DEEP_DIVE.md`](docs/STRATA_FIVE_PROTOCOLS_DEEP_DIVE.md) | Technical deep-dive of the five core protocols |
-| [`docs/STRATA_RESUME_PROFILE.md`](docs/STRATA_RESUME_PROFILE.md) | Concise project description |
 
 The **system constitution** Claude Code follows during co-build lives at [`openspec/AGENTS.md`](openspec/AGENTS.md).
 

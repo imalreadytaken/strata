@@ -13,7 +13,7 @@ describe("registerEventTools", () => {
     await h.teardown();
   });
 
-  it("buildEventTools returns ten tools with the documented names", () => {
+  it("buildEventTools returns eleven tools with the documented names", () => {
     const tools = buildEventTools(h.deps);
     expect(tools.map((t) => t.name)).toEqual([
       "strata_create_pending_event",
@@ -26,6 +26,7 @@ describe("registerEventTools", () => {
       "strata_run_build",
       "strata_query_table",
       "strata_render_dashboard",
+      "strata_stop_build",
     ]);
     for (const tool of tools) {
       expect(tool.parameters).toBeDefined();
@@ -33,7 +34,7 @@ describe("registerEventTools", () => {
     }
   });
 
-  it("registerTool is called once and the factory yields ten tools", () => {
+  it("registerTool is called once and the factory yields eleven tools", () => {
     const calls: unknown[] = [];
     const fakeApi = {
       registerTool: vi.fn((toolOrFactory: unknown) => {
@@ -58,6 +59,14 @@ describe("registerEventTools", () => {
       buildsRepo: { insert: vi.fn(), update: vi.fn(), findById: vi.fn(async () => null) },
       capabilities: new Map(),
       dashboardRegistry: { get: vi.fn(() => undefined), list: vi.fn(() => []) },
+      buildSessionRegistry: {
+        register: vi.fn(),
+        abort: vi.fn(() => ({ stopped: false })),
+        complete: vi.fn(),
+        get: vi.fn(() => undefined),
+        list: vi.fn(() => []),
+        size: vi.fn(() => 0),
+      },
       pendingBuffer: h.pendingBuffer,
       logger: h.logger,
       db: h.db,
@@ -73,7 +82,7 @@ describe("registerEventTools", () => {
     registerEventTools(fakeApi, runtime);
     expect((fakeApi.registerTool as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(1);
     const factoryResult = calls[0] as Array<{ name: string }>;
-    expect(factoryResult).toHaveLength(10);
+    expect(factoryResult).toHaveLength(11);
     expect(factoryResult.map((t) => t.name).sort()).toEqual(
       [
         "strata_abandon_event",
@@ -84,6 +93,7 @@ describe("registerEventTools", () => {
         "strata_render_dashboard",
         "strata_run_build",
         "strata_search_events",
+        "strata_stop_build",
         "strata_supersede_event",
         "strata_update_pending_event",
       ],
@@ -108,6 +118,14 @@ describe("registerEventTools", () => {
       buildsRepo: { insert: vi.fn(), update: vi.fn(), findById: vi.fn(async () => null) },
       capabilities: new Map(),
       dashboardRegistry: { get: vi.fn(() => undefined), list: vi.fn(() => []) },
+      buildSessionRegistry: {
+        register: vi.fn(),
+        abort: vi.fn(() => ({ stopped: false })),
+        complete: vi.fn(),
+        get: vi.fn(() => undefined),
+        list: vi.fn(() => []),
+        size: vi.fn(() => 0),
+      },
       pendingBuffer: h.pendingBuffer,
       logger,
       db: h.db,

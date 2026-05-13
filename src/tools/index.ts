@@ -24,6 +24,7 @@ import { queryTableTool } from "./query_table.js";
 import { renderDashboardTool } from "./render_dashboard.js";
 import { runBuildTool } from "./run_build.js";
 import { searchEventsTool } from "./search_events.js";
+import { stopBuildTool } from "./stop_build.js";
 import { supersedeEventTool } from "./supersede_event.js";
 import type { AnyAgentTool, EventToolDeps } from "./types.js";
 import { updatePendingEventTool } from "./update_pending_event.js";
@@ -92,6 +93,12 @@ export {
   type RenderDashboardDetails,
   renderDashboardSchema,
 } from "./render_dashboard.js";
+export {
+  stopBuildTool,
+  type StopBuildInput,
+  type StopBuildDetails,
+  stopBuildSchema,
+} from "./stop_build.js";
 export type {
   AnyAgentTool,
   BuildToolDeps,
@@ -120,6 +127,7 @@ export function buildEventTools(
     runBuildTool(deps),
     queryTableTool(deps),
     renderDashboardTool(deps),
+    stopBuildTool(deps),
   ];
 }
 
@@ -166,6 +174,7 @@ export function registerEventTools(
         buildsDir: runtime.config.paths.buildsDir,
         userCapabilitiesDir: runtime.config.paths.capabilitiesDir,
         maxTurnsPerPhase: 80,
+        buildSessionRegistry: runtime.buildSessionRegistry,
       },
       queryDeps: {
         db: runtime.db,

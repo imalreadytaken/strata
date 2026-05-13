@@ -70,12 +70,13 @@ describe("renderRoutingContext", () => {
     expect(r.prependContext).not.toContain("strata_create_pending_event");
   });
 
-  it("build_request template routes to strata_propose_capability", () => {
+  it("build_request template routes to strata_propose_capability and mentions strata_stop_build", () => {
     const r = renderRoutingContext(
       { kind: "build_request", confidence: 0.85, reasoning: "加个追踪" },
       makeInput(),
     );
     expect(r.prependContext).toContain("strata_propose_capability");
+    expect(r.prependContext).toContain("strata_stop_build");
     // Must NOT claim Build Bridge is unavailable (the old placeholder text).
     expect(r.prependContext.toLowerCase()).not.toMatch(
       /not yet (shipped|available)/,
@@ -116,6 +117,7 @@ describe("renderRoutingContext", () => {
       "strata_run_build",
       "strata_query_table",
       "strata_render_dashboard",
+      "strata_stop_build",
     ]) {
       expect(r.prependSystemContext).toContain(name);
     }

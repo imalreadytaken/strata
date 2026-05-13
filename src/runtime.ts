@@ -22,6 +22,7 @@ import {
   loadCapabilities,
   type CapabilityRegistry,
 } from "./capabilities/index.js";
+import { BuildSessionRegistry } from "./build/session_registry.js";
 import { loadConfig, type StrataConfig } from "./core/config.js";
 import { createLogger, type Logger } from "./core/logger.js";
 import { DashboardRegistry } from "./dashboard/registry.js";
@@ -80,6 +81,12 @@ export interface StrataRuntime {
   capabilities: CapabilityRegistry;
   /** In-memory registry of per-capability dashboards (`dashboard.json`). */
   dashboardRegistry: DashboardRegistry;
+  /**
+   * In-memory registry of in-flight Build Bridge runs, keyed by `builds.id`.
+   * `strata_run_build` registers an `AbortController` per dispatch;
+   * `strata_stop_build` fires it. Per-process only.
+   */
+  buildSessionRegistry: BuildSessionRegistry;
   /**
    * Intent classifier backend. Defaults to `HeuristicLLMClient`; future
    * change can swap in an LLM-backed implementation.
@@ -144,6 +151,7 @@ export async function bootRuntime(api: OpenClawPluginApi): Promise<StrataRuntime
 
       const capabilityRegistryRepo = new CapabilityRegistryRepository(db);
       const dashboardRegistry = new DashboardRegistry(logger);
+      const buildSessionRegistry = new BuildSessionRegistry(logger);
       const capabilities = await loadCapabilities({
         db,
         repo: capabilityRegistryRepo,
@@ -168,6 +176,7 @@ export async function bootRuntime(api: OpenClawPluginApi): Promise<StrataRuntime
         pendingBuffer,
         capabilities,
         dashboardRegistry,
+        buildSessionRegistry,
         llmClient: resolveLLMClient(config, { logger }).client,
         agentsMdSource: loadAgentsMdSource(),
       } satisfies StrataRuntime;

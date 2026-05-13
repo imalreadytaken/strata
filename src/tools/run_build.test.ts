@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   BuildRunResult,
+  RunBuildOptions,
 } from "../build/orchestrator.js";
+import { BuildSessionRegistry } from "../build/session_registry.js";
 import type { IntegrationResult } from "../build/integration.js";
 import { runBuildTool } from "./run_build.js";
 import { makeHarness, type TestHarness } from "./test_helpers.js";
@@ -203,5 +205,60 @@ describe("strata_run_build", () => {
     const d = result.details as Record<string, unknown>;
     expect(d.status).toBe("rejected");
     expect(d.failureReason).toContain("9999");
+  });
+
+  it("registers an AbortController + signal abort cancels the run; complete fires in finally", async () => {
+    const proposalId = await seedProposal();
+    const registry = new BuildSessionRegistry(h.logger);
+
+    // The stubbed runBuild reads the signal + onBuildIdAssigned callback
+    // directly (no real orchestrator) and aborts immediately after
+    // registration, simulating a user calling strata_stop_build mid-flight.
+    const runBuild = vi.fn(async (opts: RunBuildOptions) => {
+      opts.onBuildIdAssigned?.(42);
+      // Now signal must be wired — controller.abort() through registry.
+      const result = registry.abort(42);
+      expect(result.stopped).toBe(true);
+      expect(opts.signal?.aborted).toBe(true);
+      return mkBuildResult("cancelled", { build_id: 42 });
+    }) as unknown as BuildToolDeps["runBuild"];
+    const runIntegration = vi.fn() as unknown as BuildToolDeps["runIntegration"];
+    const buildDeps = makeBuildDeps({
+      runBuild,
+      runIntegration,
+      buildSessionRegistry: registry,
+    });
+
+    const result = await runBuildTool(depsWith(buildDeps)).execute("c", {
+      proposal_id: proposalId,
+    });
+    const d = result.details as Record<string, unknown>;
+    expect(d.status).toBe("cancelled");
+    expect(d.build_id).toBe(42);
+    // After the tool returns the registry MUST have deregistered.
+    expect(registry.get(42)).toBeUndefined();
+  });
+
+  it("complete fires even when runIntegration throws", async () => {
+    const proposalId = await seedProposal();
+    const registry = new BuildSessionRegistry(h.logger);
+    const runBuild = vi.fn(async (opts: RunBuildOptions) => {
+      opts.onBuildIdAssigned?.(7);
+      return mkBuildResult("ready_for_integration", { build_id: 7 });
+    }) as unknown as BuildToolDeps["runBuild"];
+    const runIntegration = vi.fn(async () => {
+      throw new Error("integration boom");
+    }) as unknown as BuildToolDeps["runIntegration"];
+    const buildDeps = makeBuildDeps({
+      runBuild,
+      runIntegration,
+      buildSessionRegistry: registry,
+    });
+
+    await expect(
+      runBuildTool(depsWith(buildDeps)).execute("c", { proposal_id: proposalId }),
+    ).rejects.toThrow(/integration boom/);
+    // The crash must still have cleared the registry slot.
+    expect(registry.get(7)).toBeUndefined();
   });
 });

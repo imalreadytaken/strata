@@ -93,6 +93,7 @@ const STRATA_TOOLS = [
   "strata_run_build",
   "strata_query_table",
   "strata_render_dashboard",
+  "strata_stop_build",
 ] as const;
 
 function renderStaticBlock(input: TriageInput): string {
@@ -116,6 +117,7 @@ function renderStaticBlock(input: TriageInput): string {
     `- ${STRATA_TOOLS[7]} — dispatch a 'pending' or 'approved' proposal through Build Bridge`,
     `- ${STRATA_TOOLS[8]} — read-only structured query over a capability's business table`,
     `- ${STRATA_TOOLS[9]} — render a capability's KPI / list widgets as Telegram-ready markdown`,
+    `- ${STRATA_TOOLS[10]} — abort an in-flight Build Bridge run by build_id`,
     "",
     "Raw event state machine: pending → committed | superseded | abandoned.",
   ].join("\n");
@@ -168,6 +170,8 @@ function renderPerTurnBlock(triage: TriageResult, input: TriageInput): string {
         pending,
         "",
         "Tool: strata_propose_capability. Identify the requested domain; if it's too vague, ask ONE clarifying question first, then call the tool with a coherent `title` / `summary` / `rationale`. The proposal lands at status='pending' in the 'proposals' table; acknowledge to the user with the returned `proposal_id` and note that Build Bridge will pick it up when shipped.",
+        "",
+        "If a build is already running and the user later says 'stop it' / '别建了' / '取消', call strata_stop_build({ build_id }) with the build_id returned by the earlier strata_run_build dispatch. Stop is asynchronous: the orchestrator marks the row 'cancelled' at the next phase boundary.",
       ].join("\n");
     default:
       return ""; // unreachable; here for exhaustiveness

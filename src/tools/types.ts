@@ -6,6 +6,7 @@
  * to follow the SDK's deep type chains. The cast in `tools/index.ts::buildTools`
  * upgrades these objects to the SDK's expected type at the boundary.
  */
+import type { BuildSessionRegistry } from "../build/session_registry.js";
 import type { CapabilityRegistry } from "../capabilities/types.js";
 import type { PipelineToolDeps } from "../capabilities/pipeline_runner.js";
 import type { Logger } from "../core/logger.js";
@@ -36,6 +37,12 @@ export interface BuildToolDeps {
   userCapabilitiesDir: string;
   maxTurnsPerPhase: number;
   progressForwarder?: BuildProgressForwarder;
+  /**
+   * Per-process registry of in-flight builds. When present, `strata_run_build`
+   * registers an `AbortController` so `strata_stop_build` can fire it.
+   * Optional so unit tests that don't exercise stop can omit it.
+   */
+  buildSessionRegistry?: BuildSessionRegistry;
   /** Injectable for tests. Defaults to the real implementations. */
   runBuild?: typeof runBuildFn;
   runIntegration?: typeof runIntegrationFn;

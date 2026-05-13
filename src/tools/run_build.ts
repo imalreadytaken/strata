@@ -100,65 +100,91 @@ export function runBuildTool(deps: EventToolDeps): AnyAgentTool {
       const runBuildFn = buildDeps.runBuild ?? defaultRunBuild;
       const runIntegrationFn = buildDeps.runIntegration ?? defaultRunIntegration;
 
-      const buildResult: BuildRunResult = await runBuildFn({
-        proposalId: input.proposal_id,
-        sessionId: `tool:${deps.sessionId}`,
-        deps: {
-          buildsRepo: buildDeps.buildsRepo,
-          proposalsRepo: deps.proposalsRepo,
-          capabilityRegistryRepo: buildDeps.capabilityRegistryRepo,
-          capabilities: buildDeps.capabilities,
-          agentsMdSource: buildDeps.agentsMdSource,
-          buildsDir: buildDeps.buildsDir,
-          maxTurnsPerPhase: buildDeps.maxTurnsPerPhase,
-          logger: deps.logger,
-          ...(buildDeps.progressForwarder
-            ? { progressForwarder: buildDeps.progressForwarder }
+      // Create a fresh AbortController so `strata_stop_build` can fire the
+      // signal during plan/decompose/apply phases. The registry is optional
+      // — when undefined the build is just un-stoppable. We track the
+      // assigned build_id so `complete` runs in the finally below.
+      const controller = new AbortController();
+      const registry = buildDeps.buildSessionRegistry;
+      let registeredBuildId: number | undefined;
+
+      try {
+        const buildResult: BuildRunResult = await runBuildFn({
+          proposalId: input.proposal_id,
+          sessionId: `tool:${deps.sessionId}`,
+          signal: controller.signal,
+          ...(registry
+            ? {
+                onBuildIdAssigned: (buildId: number) => {
+                  registeredBuildId = buildId;
+                  registry.register(buildId, controller, `tool:${deps.sessionId}`);
+                },
+              }
             : {}),
-        },
-      });
-
-      if (buildResult.status === "failed") {
-        return payloadTextResult<RunBuildToolDetails>({
-          status: "orchestrator_failed",
-          build_id: buildResult.build_id,
-          failureReason: buildResult.failureReason,
+          deps: {
+            buildsRepo: buildDeps.buildsRepo,
+            proposalsRepo: deps.proposalsRepo,
+            capabilityRegistryRepo: buildDeps.capabilityRegistryRepo,
+            capabilities: buildDeps.capabilities,
+            agentsMdSource: buildDeps.agentsMdSource,
+            buildsDir: buildDeps.buildsDir,
+            maxTurnsPerPhase: buildDeps.maxTurnsPerPhase,
+            logger: deps.logger,
+            ...(buildDeps.progressForwarder
+              ? { progressForwarder: buildDeps.progressForwarder }
+              : {}),
+          },
         });
-      }
-      if (buildResult.status === "cancelled") {
-        return payloadTextResult<RunBuildToolDetails>({
-          status: "cancelled",
-          build_id: buildResult.build_id,
+
+        if (buildResult.status === "failed") {
+          return payloadTextResult<RunBuildToolDetails>({
+            status: "orchestrator_failed",
+            build_id: buildResult.build_id,
+            failureReason: buildResult.failureReason,
+          });
+        }
+        if (buildResult.status === "cancelled") {
+          return payloadTextResult<RunBuildToolDetails>({
+            status: "cancelled",
+            build_id: buildResult.build_id,
+          });
+        }
+
+        const integrationResult: IntegrationResult = await runIntegrationFn({
+          buildResult,
+          deps: {
+            buildsRepo: buildDeps.buildsRepo,
+            proposalsRepo: deps.proposalsRepo,
+            capabilityRegistryRepo: buildDeps.capabilityRegistryRepo,
+            capabilityHealthRepo: buildDeps.capabilityHealthRepo,
+            schemaEvolutionsRepo: buildDeps.schemaEvolutionsRepo,
+            db: buildDeps.db,
+            userCapabilitiesDir: buildDeps.userCapabilitiesDir,
+            logger: deps.logger,
+          },
         });
-      }
 
-      const integrationResult: IntegrationResult = await runIntegrationFn({
-        buildResult,
-        deps: {
-          buildsRepo: buildDeps.buildsRepo,
-          proposalsRepo: deps.proposalsRepo,
-          capabilityRegistryRepo: buildDeps.capabilityRegistryRepo,
-          capabilityHealthRepo: buildDeps.capabilityHealthRepo,
-          schemaEvolutionsRepo: buildDeps.schemaEvolutionsRepo,
-          db: buildDeps.db,
-          userCapabilitiesDir: buildDeps.userCapabilitiesDir,
-          logger: deps.logger,
-        },
-      });
-
-      if (integrationResult.status === "integrated") {
+        if (integrationResult.status === "integrated") {
+          return payloadTextResult<RunBuildToolDetails>({
+            status: "integrated",
+            build_id: integrationResult.build_id,
+            integrated: integrationResult.integrated.map((c) => c.name),
+          });
+        }
         return payloadTextResult<RunBuildToolDetails>({
-          status: "integrated",
+          status: "integration_failed",
           build_id: integrationResult.build_id,
+          failureReason: integrationResult.failureReason,
           integrated: integrationResult.integrated.map((c) => c.name),
         });
+      } finally {
+        // Deregister regardless of outcome — every terminal status, plus
+        // any thrown exception, must clear the registry slot so future
+        // builds with the same id don't see stale controllers.
+        if (registry && registeredBuildId !== undefined) {
+          registry.complete(registeredBuildId);
+        }
       }
-      return payloadTextResult<RunBuildToolDetails>({
-        status: "integration_failed",
-        build_id: integrationResult.build_id,
-        failureReason: integrationResult.failureReason,
-        integrated: integrationResult.integrated.map((c) => c.name),
-      });
     },
   };
 }

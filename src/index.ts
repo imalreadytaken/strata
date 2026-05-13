@@ -1,22 +1,30 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 
+import { installMessageHooks } from "./hooks/index.js";
+import { bootRuntime } from "./runtime.js";
+
 /**
  * Strata plugin entry.
  *
- * This is the minimum-viable, compilable stub. Subsequent phases will:
+ * `register(api)` is OpenClaw's hand-off point. We:
  *
- *   P1 — wire `register(api)` to bootstrap the SQLite database, run system-table
- *        migrations, and load all installed capabilities.
- *   P2 — register `onUserMessage` / `onAssistantMessage` hooks, the six
- *        `strata_*` event tools, the capture skill, and the inline-keyboard
- *        callback handler.
- *   P3 — load capabilities from `~/.strata/capabilities/<name>/current/`.
- *   P4 — start the Build Bridge orchestrator.
- *   P5 — start the Reflect Agent cron.
- *   P6 — start the Re-extraction worker.
+ *   1. boot the Strata runtime (open DB, run system migrations, build
+ *      every repository) — idempotent across multiple registrations
+ *   2. install the message_received / message_sent hooks so every IM
+ *      message is persisted to the `messages` table
  *
- * See `docs/STRATA_SPEC.md` §5 for the full module design and `openspec/AGENTS.md`
- * for the hard constraints any generated capability must obey.
+ * Future phases attach more registrations here:
+ *
+ *   P2 — strata_* tools, inline-keyboard callback handler, pending-buffer
+ *        timeout loop, triage classifier, capture skill
+ *   P3 — capability loader + pipeline runner
+ *   P4 — Build Bridge entry points (build skill, progress forwarder)
+ *   P5 — Reflect Agent cron + push handler
+ *   P6 — Re-extraction worker + query skill + dashboard widgets
+ *
+ * See `docs/STRATA_SPEC.md` §5 for the full module design and
+ * `openspec/AGENTS.md` for the hard constraints any generated capability
+ * must obey.
  */
 export default {
   id: "strata",
@@ -25,9 +33,10 @@ export default {
     "Local-first personal data sedimentation and software forge — captures life events, lets capabilities emerge, co-builds new ones via Claude Code.",
 
   /**
-   * The plugin currently exposes no user-facing configuration; capability-specific
-   * knobs live in their own `meta.json`. We will fill this in once the
-   * `src/core/config.ts` module exists (P1).
+   * The plugin currently exposes no user-facing OpenClaw configuration;
+   * Strata reads its own config from `~/.strata/config.json` via
+   * `core/config.ts::loadConfig`. We will fill this in if/when an OpenClaw
+   * setting (e.g. an enable/disable toggle) is genuinely needed.
    */
   configSchema: {
     type: "object" as const,
@@ -35,8 +44,21 @@ export default {
     properties: {},
   },
 
-  register(_api: OpenClawPluginApi): void {
-    // Intentionally empty — P0 bootstrap stub. See JSDoc above for the
-    // phase-by-phase wiring plan.
+  async register(api: OpenClawPluginApi): Promise<void> {
+    try {
+      const runtime = await bootRuntime(api);
+      installMessageHooks(api, {
+        messagesRepo: runtime.messagesRepo,
+        logger: runtime.logger,
+      });
+      runtime.logger.info("Strata plugin registered", {
+        db_path: runtime.config.database.path,
+      });
+    } catch (err) {
+      api.logger?.error?.(
+        `Strata register() failed: ${(err as Error).message}`,
+      );
+      throw err;
+    }
   },
 };

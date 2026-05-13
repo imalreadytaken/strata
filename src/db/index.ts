@@ -33,3 +33,5 @@ export const SYSTEM_MIGRATIONS_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "migrations",
 );
+
+export * from "./repositories/index.js";

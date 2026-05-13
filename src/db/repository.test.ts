@@ -44,16 +44,20 @@ class MockRepo implements Repository<MockRow> {
     return (await this.findMany(filter)).length;
   }
 
-  async insert(data: Omit<MockRow, "id">): Promise<MockRow> {
+  async insert(data: Partial<MockRow>): Promise<MockRow> {
     const id = ++this.seq;
-    const row: MockRow = { id, ...data };
+    const row: MockRow = {
+      id,
+      name: data.name ?? "",
+      status: data.status ?? "active",
+    };
     this.rows.set(id, row);
     return row;
   }
 
   async update(
     id: number,
-    patch: Partial<Omit<MockRow, "id">>,
+    patch: Partial<MockRow>,
   ): Promise<MockRow> {
     const existing = this.rows.get(id);
     if (!existing) throw new Error("not found");

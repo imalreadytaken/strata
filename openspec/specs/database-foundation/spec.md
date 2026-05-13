@@ -3,7 +3,6 @@
 ## Purpose
 
 `database-foundation` is the SQLite layer every other Strata module sits on. It opens (and creates) `~/.strata/main.db` with the pragmas Strata's tables assume — foreign keys on, WAL journaling, normal sync, 5s busy timeout — loads `sqlite-vec` for vector ops, defines the `Repository<T>` contract that lets later phases stay agnostic about SQL, and ships a migration runner that applies versioned `NNN_*.sql` files exactly once and refuses to silently re-run an edited one (AGENTS.md hard constraint #5: migrations are immutable).
-
 ## Requirements
 ### Requirement: Database connection is configured with safe defaults
 
@@ -35,22 +34,27 @@ The system SHALL expose `openDatabase(opts: { path: string; loadVec?: boolean })
 
 ### Requirement: Repository interface
 
-The system SHALL expose a generic `Repository<T>` interface declaring the following methods:
+The system SHALL expose a generic `Repository<T, ID = number>` interface declaring the following methods. The default `ID` is `number`, so existing call sites are unaffected; tables whose primary key is a string (e.g. `capability_registry.name`, `capability_health.capability_name`) instantiate the interface with `ID = string`.
 
-- `findById(id: number): Promise<T | null>`
+- `findById(id: ID): Promise<T | null>`
 - `findMany(filter: Partial<T>, options?: { limit?: number; offset?: number; orderBy?: keyof T; direction?: 'asc' | 'desc' }): Promise<T[]>`
-- `insert(data: Omit<T, 'id'>): Promise<T>`
-- `update(id: number, patch: Partial<Omit<T, 'id'>>): Promise<T>`
-- `softDelete(id: number): Promise<void>` — semantic delete; concrete implementations decide which column flips
+- `insert(data: Partial<T>): Promise<T>` — the loose `Partial<T>` accommodates both synthetic-id tables (caller omits `id`) and natural-key tables (caller must provide the key column); concrete implementations validate required fields at runtime
+- `update(id: ID, patch: Partial<T>): Promise<T>`
+- `softDelete(id: ID): Promise<void>` — semantic delete; concrete implementations decide which column flips
 - `count(filter?: Partial<T>): Promise<number>`
 - `transaction<R>(fn: () => Promise<R>): Promise<R>`
 
 The interface MUST NOT prescribe how implementations talk to SQLite — it is a contract, not an implementation.
 
-#### Scenario: Type-only contract compiles
+#### Scenario: Type-only contract compiles for number-ID tables
 
-- **WHEN** a downstream module imports `Repository<T>` and writes a stub class declaring the methods
+- **WHEN** a downstream module imports `Repository<T>` (default `ID = number`) and writes a stub class declaring the methods
 - **THEN** the TypeScript compiler accepts the class without raw-SQL leakage from `Repository<T>`
+
+#### Scenario: Type-only contract compiles for string-ID tables
+
+- **WHEN** a downstream module imports `Repository<T, string>` and writes a stub class with `findById(id: string)`, `update(id: string, ...)` etc.
+- **THEN** the TypeScript compiler accepts the class without complaint
 
 ### Requirement: Migration runner applies versioned SQL files exactly once
 

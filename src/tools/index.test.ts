@@ -1,0 +1,92 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { buildEventTools, registerEventTools } from "./index.js";
+import { makeHarness, type TestHarness } from "./test_helpers.js";
+
+describe("registerEventTools", () => {
+  let h: TestHarness;
+
+  beforeEach(() => {
+    h = makeHarness({ sessionId: "s-register" });
+  });
+  afterEach(async () => {
+    await h.teardown();
+  });
+
+  it("buildEventTools returns six tools with the documented names", () => {
+    const tools = buildEventTools(h.deps);
+    expect(tools.map((t) => t.name)).toEqual([
+      "strata_create_pending_event",
+      "strata_update_pending_event",
+      "strata_commit_event",
+      "strata_supersede_event",
+      "strata_abandon_event",
+      "strata_search_events",
+    ]);
+    for (const tool of tools) {
+      expect(tool.parameters).toBeDefined();
+      expect(typeof tool.execute).toBe("function");
+    }
+  });
+
+  it("registerTool is called once and the factory yields six tools", () => {
+    const calls: unknown[] = [];
+    const fakeApi = {
+      registerTool: vi.fn((toolOrFactory: unknown) => {
+        if (typeof toolOrFactory === "function") {
+          const result = (toolOrFactory as (ctx: unknown) => unknown)({
+            sessionId: "ctx-session",
+          });
+          calls.push(result);
+        } else {
+          calls.push(toolOrFactory);
+        }
+      }),
+      logger: { warn: vi.fn() },
+    } as unknown as Parameters<typeof registerEventTools>[0];
+
+    const runtime = {
+      rawEventsRepo: h.rawEventsRepo,
+      pendingBuffer: h.pendingBuffer,
+      logger: h.logger,
+      db: h.db,
+    } as unknown as Parameters<typeof registerEventTools>[1];
+
+    registerEventTools(fakeApi, runtime);
+    expect((fakeApi.registerTool as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(1);
+    const factoryResult = calls[0] as Array<{ name: string }>;
+    expect(factoryResult).toHaveLength(6);
+    expect(factoryResult.map((t) => t.name).sort()).toEqual(
+      [
+        "strata_abandon_event",
+        "strata_commit_event",
+        "strata_create_pending_event",
+        "strata_search_events",
+        "strata_supersede_event",
+        "strata_update_pending_event",
+      ],
+    );
+  });
+
+  it("falls back to 'default' session and logs a warn when ctx.sessionId is missing", () => {
+    const warnSpy = vi.fn();
+    const childLogger = { warn: warnSpy };
+    const logger = { child: vi.fn(() => childLogger) };
+    const fakeApi = {
+      registerTool: (factory: unknown) => {
+        (factory as (ctx: unknown) => unknown)({});
+      },
+    } as unknown as Parameters<typeof registerEventTools>[0];
+    const runtime = {
+      rawEventsRepo: h.rawEventsRepo,
+      pendingBuffer: h.pendingBuffer,
+      logger,
+      db: h.db,
+    } as unknown as Parameters<typeof registerEventTools>[1];
+
+    registerEventTools(fakeApi, runtime);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("no sessionId"),
+    );
+  });
+});

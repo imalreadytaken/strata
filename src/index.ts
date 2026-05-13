@@ -3,6 +3,7 @@ import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { installMessageHooks } from "./hooks/index.js";
 import { startPendingTimeoutLoop } from "./pending_buffer/index.js";
 import { bootRuntime } from "./runtime.js";
+import { registerEventTools } from "./tools/index.js";
 
 /**
  * Strata plugin entry.
@@ -16,8 +17,8 @@ import { bootRuntime } from "./runtime.js";
  *
  * Future phases attach more registrations here:
  *
- *   P2 — strata_* tools, inline-keyboard callback handler, pending-buffer
- *        timeout loop, triage classifier, capture skill
+ *   P2 — strata_* tools (done), inline-keyboard callback handler, pending-buffer
+ *        timeout loop (done), triage classifier, capture skill
  *   P3 — capability loader + pipeline runner
  *   P4 — Build Bridge entry points (build skill, progress forwarder)
  *   P5 — Reflect Agent cron + push handler
@@ -58,6 +59,7 @@ export default {
         timeoutMinutes: runtime.config.pending.timeoutMinutes,
         logger: runtime.logger,
       });
+      registerEventTools(api, runtime);
       runtime.logger.info("Strata plugin registered", {
         db_path: runtime.config.database.path,
       });

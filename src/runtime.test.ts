@@ -61,9 +61,15 @@ describe("bootRuntime", () => {
     expect(runtime.capabilityHealthRepo).toBeDefined();
     // System tables exist (we can insert).
     expect(await runtime.messagesRepo.count()).toBe(0);
-    // Capability registry is empty on a fresh DB with nothing on disk.
+    // First-party capabilities load from the bundled root.
     expect(runtime.capabilities).toBeInstanceOf(Map);
-    expect(runtime.capabilities.size).toBe(0);
+    expect(runtime.capabilities.has("expenses")).toBe(true);
+    expect(runtime.capabilities.get("expenses")!.meta.primary_table).toBe(
+      "expenses",
+    );
+    expect(runtime.capabilities.get("expenses")!.meta.ingest_event_types).toContain(
+      "consumption",
+    );
   });
 
   it("is idempotent: two calls return the same runtime, migrations run once", async () => {

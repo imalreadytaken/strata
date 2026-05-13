@@ -1,0 +1,10 @@
+{
+  "name": "expenses",
+  "version": 1,
+  "description": "Track personal consumption (purchases, dining, services) with merchant + amount + category.",
+  "primary_table": "expenses",
+  "depends_on_capabilities": [],
+  "ingest_event_types": ["consumption"],
+  "owner_pipeline": "pipeline.ts",
+  "exposed_skills": []
+}

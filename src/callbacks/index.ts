@@ -25,11 +25,21 @@ export function registerStrataCallbacks(
   // ctx.conversationId; the base deps just need the shared repo + buffer
   // refs. Using FALLBACK_SESSION here is harmless because the handler
   // unconditionally overrides `sessionId` with `ctx.conversationId`.
+  //
+  // `pipelineDeps` is passed through so the inline-keyboard commit path
+  // runs the bound capability's pipeline (mirrors `registerEventTools`).
   const baseDeps: EventToolDeps = {
     rawEventsRepo: runtime.rawEventsRepo,
     pendingBuffer: runtime.pendingBuffer,
     logger: runtime.logger,
     sessionId: FALLBACK_SESSION,
+    pipelineDeps: {
+      db: runtime.db,
+      registry: runtime.capabilities,
+      rawEventsRepo: runtime.rawEventsRepo,
+      capabilityHealthRepo: runtime.capabilityHealthRepo,
+      logger: runtime.logger,
+    },
   };
   api.registerInteractiveHandler({
     channel: "telegram",

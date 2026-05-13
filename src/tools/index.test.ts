@@ -13,7 +13,7 @@ describe("registerEventTools", () => {
     await h.teardown();
   });
 
-  it("buildEventTools returns seven tools with the documented names", () => {
+  it("buildEventTools returns eight tools with the documented names", () => {
     const tools = buildEventTools(h.deps);
     expect(tools.map((t) => t.name)).toEqual([
       "strata_create_pending_event",
@@ -23,6 +23,7 @@ describe("registerEventTools", () => {
       "strata_abandon_event",
       "strata_search_events",
       "strata_propose_capability",
+      "strata_run_build",
     ]);
     for (const tool of tools) {
       expect(tool.parameters).toBeDefined();
@@ -30,7 +31,7 @@ describe("registerEventTools", () => {
     }
   });
 
-  it("registerTool is called once and the factory yields seven tools", () => {
+  it("registerTool is called once and the factory yields eight tools", () => {
     const calls: unknown[] = [];
     const fakeApi = {
       registerTool: vi.fn((toolOrFactory: unknown) => {
@@ -50,22 +51,33 @@ describe("registerEventTools", () => {
       rawEventsRepo: h.rawEventsRepo,
       proposalsRepo: h.proposalsRepo,
       capabilityHealthRepo: h.capabilityHealthRepo,
+      capabilityRegistryRepo: { findMany: vi.fn(async () => []) },
+      schemaEvolutionsRepo: { findMany: vi.fn(async () => []) },
+      buildsRepo: { insert: vi.fn(), update: vi.fn(), findById: vi.fn(async () => null) },
       capabilities: new Map(),
       pendingBuffer: h.pendingBuffer,
       logger: h.logger,
       db: h.db,
+      agentsMdSource: "# AGENTS.md",
+      config: {
+        paths: {
+          buildsDir: "/tmp/builds",
+          capabilitiesDir: "/tmp/caps",
+        },
+      },
     } as unknown as Parameters<typeof registerEventTools>[1];
 
     registerEventTools(fakeApi, runtime);
     expect((fakeApi.registerTool as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(1);
     const factoryResult = calls[0] as Array<{ name: string }>;
-    expect(factoryResult).toHaveLength(7);
+    expect(factoryResult).toHaveLength(8);
     expect(factoryResult.map((t) => t.name).sort()).toEqual(
       [
         "strata_abandon_event",
         "strata_commit_event",
         "strata_create_pending_event",
         "strata_propose_capability",
+        "strata_run_build",
         "strata_search_events",
         "strata_supersede_event",
         "strata_update_pending_event",
@@ -86,10 +98,17 @@ describe("registerEventTools", () => {
       rawEventsRepo: h.rawEventsRepo,
       proposalsRepo: h.proposalsRepo,
       capabilityHealthRepo: h.capabilityHealthRepo,
+      capabilityRegistryRepo: { findMany: vi.fn(async () => []) },
+      schemaEvolutionsRepo: { findMany: vi.fn(async () => []) },
+      buildsRepo: { insert: vi.fn(), update: vi.fn(), findById: vi.fn(async () => null) },
       capabilities: new Map(),
       pendingBuffer: h.pendingBuffer,
       logger,
       db: h.db,
+      agentsMdSource: "# AGENTS.md",
+      config: {
+        paths: { buildsDir: "/tmp/builds", capabilitiesDir: "/tmp/caps" },
+      },
     } as unknown as Parameters<typeof registerEventTools>[1];
 
     registerEventTools(fakeApi, runtime);

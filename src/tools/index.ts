@@ -20,6 +20,7 @@ import { abandonEventTool } from "./abandon_event.js";
 import { commitEventTool } from "./commit_event.js";
 import { createPendingEventTool } from "./create_pending_event.js";
 import { proposeCapabilityTool } from "./propose_capability.js";
+import { runBuildTool } from "./run_build.js";
 import { searchEventsTool } from "./search_events.js";
 import { supersedeEventTool } from "./supersede_event.js";
 import type { AnyAgentTool, EventToolDeps } from "./types.js";
@@ -71,7 +72,13 @@ export {
   type ProposeCapabilityDetails,
   proposeCapabilitySchema,
 } from "./propose_capability.js";
-export type { AnyAgentTool, EventToolDeps } from "./types.js";
+export {
+  runBuildTool,
+  type RunBuildInput,
+  type RunBuildToolDetails,
+  runBuildSchema,
+} from "./run_build.js";
+export type { AnyAgentTool, BuildToolDeps, EventToolDeps } from "./types.js";
 
 /**
  * Build the six tool objects for a given session-bound deps bundle. Exported
@@ -90,6 +97,7 @@ export function buildEventTools(
     abandonEventTool(deps),
     searchEventsTool(deps),
     proposeCapabilityTool(deps),
+    runBuildTool(deps),
   ];
 }
 
@@ -124,6 +132,18 @@ export function registerEventTools(
         rawEventsRepo: runtime.rawEventsRepo,
         capabilityHealthRepo: runtime.capabilityHealthRepo,
         logger: runtime.logger,
+      },
+      buildDeps: {
+        db: runtime.db,
+        buildsRepo: runtime.buildsRepo,
+        capabilityRegistryRepo: runtime.capabilityRegistryRepo,
+        capabilityHealthRepo: runtime.capabilityHealthRepo,
+        schemaEvolutionsRepo: runtime.schemaEvolutionsRepo,
+        capabilities: runtime.capabilities,
+        agentsMdSource: runtime.agentsMdSource,
+        buildsDir: runtime.config.paths.buildsDir,
+        userCapabilitiesDir: runtime.config.paths.capabilitiesDir,
+        maxTurnsPerPhase: 80,
       },
     };
     // Cast our locally-shaped `AnyAgentTool[]` to the SDK's deeper typed

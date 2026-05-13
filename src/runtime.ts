@@ -12,6 +12,7 @@
  * Subsequent `bootRuntime` calls return the same memoised value. Tests use
  * `resetRuntimeForTests()` to clear the cache between cases.
  */
+import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -47,6 +48,20 @@ import type { LLMClient } from "./triage/index.js";
 const BUNDLED_CAPABILITIES_ROOT = fileURLToPath(
   new URL("./capabilities/", import.meta.url),
 );
+const AGENTS_MD_PATH = fileURLToPath(
+  new URL("../openspec/AGENTS.md", import.meta.url),
+);
+
+function loadAgentsMdSource(): string {
+  try {
+    return readFileSync(AGENTS_MD_PATH, "utf8");
+  } catch {
+    // Tests + ad-hoc dev contexts may run from a tree where the file is
+    // elsewhere. Returning a placeholder keeps boot non-fatal; Build Bridge
+    // can still spawn but Claude Code will lack constitution context.
+    return "# AGENTS.md (placeholder — constitution not loaded)\n";
+  }
+}
 
 export interface StrataRuntime {
   config: Readonly<StrataConfig>;
@@ -69,6 +84,11 @@ export interface StrataRuntime {
   llmClient: LLMClient;
   /** Reflect cron stop handle, populated when the agent is started. */
   stopReflect?: () => void;
+  /**
+   * AGENTS.md text used by Build Bridge to seed each workdir's
+   * constitution. Loaded at boot from `<plugin>/openspec/AGENTS.md`.
+   */
+  agentsMdSource: string;
 }
 
 let cached: Promise<StrataRuntime> | undefined;
@@ -141,6 +161,7 @@ export async function bootRuntime(api: OpenClawPluginApi): Promise<StrataRuntime
         pendingBuffer,
         capabilities,
         llmClient: resolveLLMClient(config, { logger }).client,
+        agentsMdSource: loadAgentsMdSource(),
       } satisfies StrataRuntime;
     } catch (err) {
       // Failed boots must NOT poison the cache; later attempts (e.g. after

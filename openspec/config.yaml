@@ -1,20 +1,40 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Strata is a local-first personal data sedimentation and software-forge platform,
+  implemented as an OpenClaw plugin (TypeScript, Node ≥ 22, ESM).
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Source-of-truth documents:
+    - docs/STRATA_SPEC.md                  — engineering contract (modules, DDL, prompts, roadmap)
+    - docs/PROJECT_RESEARCH_BACKGROUND.md  — research rationale and decision log
+    - openspec/AGENTS.md                   — runtime constitution (hard constraints; wins on conflict)
+
+  Tech stack: TypeScript / Node ≥ 22 (ESM) · SQLite + sqlite-vec (vector) + FTS5
+  (full-text) · better-sqlite3 driver · Zod validation · OpenClaw plugin SDK
+  (`openclaw@2026.3.23`) · Claude Code CLI subprocess for code generation ·
+  Vitest for tests.
+
+  Two-layer data model: `messages → raw_events → business_tables`. Every business
+  row traces back to one raw_event via `raw_event_id`. Each business table has
+  exactly one owner ingest pipeline (owner-pipeline rule). Append-only raw_events,
+  INTEGER minor units for money, ISO 8601 with TZ for time.
+
+  Conventions:
+    - Conventional commits (`feat:` / `fix:` / `chore:` / `docs:` / `refactor:` / `test:` …)
+    - Co-Authored-By trailer when Claude wrote substantial code
+    - Capability code lives at `~/.strata/capabilities/<name>/v<N>/` at runtime
+      (the plugin loads them from there); first-party code lives under `src/`.
+    - Migrations are immutable once committed.
+
+rules:
+  proposal:
+    - State the user-visible problem in the opening line.
+    - Include a "Non-goals" section so reviewers can recognize scope creep.
+    - Reference the relevant STRATA_SPEC.md section number(s).
+  design:
+    - List the files this change creates or modifies, with one-line purpose each.
+    - Call out any deviation from openspec/AGENTS.md and justify it.
+  tasks:
+    - Order tasks so dependencies are satisfied (schema before pipeline, etc.).
+    - Each task should be checkable in under ~2 hours; split if larger.
+    - Always include a "tests" task; tests are not optional.

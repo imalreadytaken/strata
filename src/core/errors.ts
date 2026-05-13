@@ -18,7 +18,9 @@ export type StrataErrorCode =
   | "STRATA_E_NOT_FOUND"
   | "STRATA_E_STATE_TRANSITION"
   | "STRATA_E_CAPABILITY_INVALID"
-  | "STRATA_E_CAPABILITY_MIGRATE_FAILED";
+  | "STRATA_E_CAPABILITY_MIGRATE_FAILED"
+  | "STRATA_E_PIPELINE_INVALID"
+  | "STRATA_E_PIPELINE_FAILED";
 
 export interface StrataErrorOptions {
   cause?: unknown;

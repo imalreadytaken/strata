@@ -8,6 +8,7 @@
  */
 import { z } from "zod";
 
+import { runPipelineForEvent } from "../capabilities/pipeline_runner.js";
 import type { AnyAgentTool, EventToolDeps } from "./types.js";
 import { payloadTextResult, type ToolResult } from "./result.js";
 import { toJsonSchema } from "./zod_to_json_schema.js";
@@ -22,10 +23,15 @@ export interface CommitEventDetails {
   event_id: number;
   status: "committed";
   /**
-   * Always `false` in P2. P3 wires a pipeline runner that may flip it `true`
-   * when the bound capability writes a business-table row.
+   * `true` when the bound capability's pipeline successfully wrote a
+   * business-table row. `false` for events without `capability_name`, when
+   * no `pipelineDeps` is wired (e.g. unit-test harness), or when the
+   * pipeline failed (logged at `error`; the committed raw_event row is
+   * preserved either way — the user's fact is never lost).
    */
   capability_written: boolean;
+  /** Set when the pipeline returned a `business_row_id`. */
+  business_row_id?: number;
   summary: string;
 }
 
@@ -92,10 +98,27 @@ export async function commitEventCore(
       });
   }
 
-  return {
+  let capability_written = false;
+  let business_row_id: number | undefined;
+  if (updated.capability_name && deps.pipelineDeps) {
+    const outcome = await runPipelineForEvent({
+      rawEvent: updated,
+      toolDeps: deps.pipelineDeps,
+    });
+    capability_written = outcome.capability_written;
+    if (outcome.business_row_id !== undefined) {
+      business_row_id = outcome.business_row_id;
+    }
+  }
+
+  const details: CommitEventDetails = {
     event_id: updated.id,
     status: "committed",
-    capability_written: false,
+    capability_written,
     summary: updated.source_summary,
   };
+  if (business_row_id !== undefined) {
+    details.business_row_id = business_row_id;
+  }
+  return details;
 }

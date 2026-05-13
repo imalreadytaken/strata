@@ -109,6 +109,13 @@ export function registerEventTools(
       logger: runtime.logger,
       sessionId,
       db: runtime.db,
+      pipelineDeps: {
+        db: runtime.db,
+        registry: runtime.capabilities,
+        rawEventsRepo: runtime.rawEventsRepo,
+        capabilityHealthRepo: runtime.capabilityHealthRepo,
+        logger: runtime.logger,
+      },
     };
     // Cast our locally-shaped `AnyAgentTool[]` to the SDK's deeper typed
     // shape; runtime fields match exactly (name/label/description/parameters/

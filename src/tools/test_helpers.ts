@@ -10,6 +10,7 @@ import * as path from "node:path";
 
 import type DatabaseType from "better-sqlite3";
 
+import type { PipelineToolDeps } from "../capabilities/pipeline_runner.js";
 import { createLogger, type Logger } from "../core/logger.js";
 import { openDatabase } from "../db/connection.js";
 
@@ -17,6 +18,7 @@ type Database = DatabaseType.Database;
 import { applyMigrations } from "../db/migrations.js";
 import { SYSTEM_MIGRATIONS_DIR } from "../db/index.js";
 import {
+  CapabilityHealthRepository,
   MessagesRepository,
   RawEventsRepository,
 } from "../db/repositories/index.js";
@@ -29,6 +31,7 @@ export interface TestHarness {
   logger: Logger;
   messagesRepo: MessagesRepository;
   rawEventsRepo: RawEventsRepository;
+  capabilityHealthRepo: CapabilityHealthRepository;
   pendingBuffer: PendingBuffer;
   deps: EventToolDeps & { db: Database };
   /** Insert a `messages` row and return its id; handy for satisfying FK constraints. */
@@ -37,7 +40,16 @@ export interface TestHarness {
   teardown(): Promise<void>;
 }
 
-export function makeHarness(opts: { sessionId?: string } = {}): TestHarness {
+export interface MakeHarnessOpts {
+  sessionId?: string;
+  /**
+   * Optional pipeline-runner deps wired into `deps.pipelineDeps`. Default
+   * `undefined` — pre-existing tests don't exercise capability writes.
+   */
+  pipelineDeps?: PipelineToolDeps;
+}
+
+export function makeHarness(opts: MakeHarnessOpts = {}): TestHarness {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "strata-tools-"));
   const db = openDatabase({ path: path.join(tmp, "main.db"), loadVec: false });
   applyMigrations(db, SYSTEM_MIGRATIONS_DIR);
@@ -47,6 +59,7 @@ export function makeHarness(opts: { sessionId?: string } = {}): TestHarness {
   });
   const messagesRepo = new MessagesRepository(db);
   const rawEventsRepo = new RawEventsRepository(db);
+  const capabilityHealthRepo = new CapabilityHealthRepository(db);
   const pendingBuffer = new PendingBuffer({
     stateFile: path.join(tmp, "pending_buffer.json"),
     logger,
@@ -59,6 +72,9 @@ export function makeHarness(opts: { sessionId?: string } = {}): TestHarness {
     sessionId,
     db,
   };
+  if (opts.pipelineDeps) {
+    deps.pipelineDeps = opts.pipelineDeps;
+  }
 
   return {
     tmp,
@@ -66,6 +82,7 @@ export function makeHarness(opts: { sessionId?: string } = {}): TestHarness {
     logger,
     messagesRepo,
     rawEventsRepo,
+    capabilityHealthRepo,
     pendingBuffer,
     deps,
     async insertMessage(s = sessionId, content = "x"): Promise<number> {

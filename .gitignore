@@ -2,8 +2,12 @@
 node_modules/
 
 # Build output
-dist/
-build/
+# (Strata's tsc outDir is ./dist per tsconfig.json. We deliberately do NOT
+# blanket-ignore `build/` here — Strata's Build Bridge source lives at
+# src/build/ and gitignore patterns without a leading `/` match anywhere
+# in the tree. Earlier `build/` line silently excluded ~5000 lines of
+# Build Bridge code from every commit — see `fix(git): recover src/build`.)
+/dist/
 *.tsbuildinfo
 
 # Coverage

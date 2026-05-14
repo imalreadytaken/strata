@@ -59,81 +59,102 @@ export default {
     properties: {},
   },
 
-  async register(api: OpenClawPluginApi): Promise<void> {
-    try {
-      const runtime = await bootRuntime(api);
-      installMessageHooks(api, {
-        messagesRepo: runtime.messagesRepo,
-        logger: runtime.logger,
-      });
-      startPendingTimeoutLoop({
-        pendingBuffer: runtime.pendingBuffer,
-        rawEventsRepo: runtime.rawEventsRepo,
-        timeoutMinutes: runtime.config.pending.timeoutMinutes,
-        logger: runtime.logger,
-      });
-      registerEventTools(api, runtime);
-      registerStrataCallbacks(api, runtime);
-      installTriageHook(api, {
-        messagesRepo: runtime.messagesRepo,
-        rawEventsRepo: runtime.rawEventsRepo,
-        pendingBuffer: runtime.pendingBuffer,
-        capabilities: runtime.capabilities,
-        llmClient: runtime.llmClient,
-        logger: runtime.logger,
-      });
-      runtime.stopReflect = startReflectAgent({
-        db: runtime.db,
-        capabilityRegistryRepo: runtime.capabilityRegistryRepo,
-        capabilityHealthRepo: runtime.capabilityHealthRepo,
-        proposalsRepo: runtime.proposalsRepo,
-        llmClient: runtime.llmClient,
-        logger: runtime.logger,
-      });
-      api.registerInteractiveHandler({
-        channel: "telegram",
-        namespace: "strata-propose",
-        handler: handleReflectCallback({
-          proposalsRepo: runtime.proposalsRepo,
+  /**
+   * OpenClaw's plugin contract requires `register: (api) => void` —
+   * synchronous, no Promise. But Strata's `bootRuntime` is async
+   * (config + capability loader use `fs/promises`, repos return
+   * `Promise<T>` by convention). We bridge with a fire-and-forget IIFE:
+   *
+   * - `register()` returns synchronously.
+   * - Hooks, tools, callback handlers, and background loops register
+   *   ~50–200ms later when bootRuntime resolves. OpenClaw's hook table is
+   *   stateful (every `api.on(...)` / `api.registerTool(...)` mutates it
+   *   as it lands), so deferred registration still wires up correctly.
+   * - Any inbound message arriving inside that boot window simply
+   *   doesn't see Strata's hooks — Strata's whole DB write + triage
+   *   chain is skipped for that one message. Acceptable for personal
+   *   dogfood; revisit when we add a proper "startup gate" surface.
+   * - A boot failure logs to OpenClaw's logger; we deliberately do not
+   *   re-throw out of the IIFE because nothing would catch it.
+   */
+  register(api: OpenClawPluginApi): void {
+    void (async () => {
+      try {
+        const runtime = await bootRuntime(api);
+        installMessageHooks(api, {
+          messagesRepo: runtime.messagesRepo,
           logger: runtime.logger,
-        }),
-      });
-
-      // Register the default reextract strategies. Each register() throws
-      // on duplicate name; the try/catch makes a re-boot idempotent.
-      for (const strategy of [
-        deriveExistingStrategy,
-        reextractRawEventsStrategy,
-        reextractMessagesStrategy,
-      ]) {
-        try {
-          defaultReextractRegistry.register(strategy);
-        } catch {
-          // already registered (idempotent re-boot); fine.
-        }
-      }
-      runtime.stopReextract = startReextractWorker(
-        {
+        });
+        startPendingTimeoutLoop({
+          pendingBuffer: runtime.pendingBuffer,
+          rawEventsRepo: runtime.rawEventsRepo,
+          timeoutMinutes: runtime.config.pending.timeoutMinutes,
+          logger: runtime.logger,
+        });
+        registerEventTools(api, runtime);
+        registerStrataCallbacks(api, runtime);
+        installTriageHook(api, {
+          messagesRepo: runtime.messagesRepo,
+          rawEventsRepo: runtime.rawEventsRepo,
+          pendingBuffer: runtime.pendingBuffer,
+          capabilities: runtime.capabilities,
+          llmClient: runtime.llmClient,
+          logger: runtime.logger,
+        });
+        runtime.stopReflect = startReflectAgent({
           db: runtime.db,
           capabilityRegistryRepo: runtime.capabilityRegistryRepo,
-          reextractJobsRepo: runtime.reextractJobsRepo,
-          schemaEvolutionsRepo: runtime.schemaEvolutionsRepo,
+          capabilityHealthRepo: runtime.capabilityHealthRepo,
+          proposalsRepo: runtime.proposalsRepo,
+          llmClient: runtime.llmClient,
           logger: runtime.logger,
-        },
-        {
-          enabled: runtime.config.reextract.enabled,
-          intervalMs:
-            runtime.config.reextract.poll_interval_seconds * 1000,
-        },
-      );
-      runtime.logger.info("Strata plugin registered", {
-        db_path: runtime.config.database.path,
-      });
-    } catch (err) {
-      api.logger?.error?.(
-        `Strata register() failed: ${(err as Error).message}`,
-      );
-      throw err;
-    }
+        });
+        api.registerInteractiveHandler({
+          channel: "telegram",
+          namespace: "strata-propose",
+          handler: handleReflectCallback({
+            proposalsRepo: runtime.proposalsRepo,
+            logger: runtime.logger,
+          }),
+        });
+
+        // Register the default reextract strategies. Each register() throws
+        // on duplicate name; the try/catch makes a re-boot idempotent.
+        for (const strategy of [
+          deriveExistingStrategy,
+          reextractRawEventsStrategy,
+          reextractMessagesStrategy,
+        ]) {
+          try {
+            defaultReextractRegistry.register(strategy);
+          } catch {
+            // already registered (idempotent re-boot); fine.
+          }
+        }
+        runtime.stopReextract = startReextractWorker(
+          {
+            db: runtime.db,
+            capabilityRegistryRepo: runtime.capabilityRegistryRepo,
+            reextractJobsRepo: runtime.reextractJobsRepo,
+            schemaEvolutionsRepo: runtime.schemaEvolutionsRepo,
+            logger: runtime.logger,
+          },
+          {
+            enabled: runtime.config.reextract.enabled,
+            intervalMs:
+              runtime.config.reextract.poll_interval_seconds * 1000,
+          },
+        );
+        runtime.logger.info("Strata plugin registered", {
+          db_path: runtime.config.database.path,
+        });
+      } catch (err) {
+        api.logger?.error?.(
+          `Strata register() failed: ${(err as Error).message}`,
+        );
+        // Fire-and-forget: nothing would catch a re-throw here. We log
+        // and let OpenClaw observe the plugin as "registered but partial".
+      }
+    })();
   },
 };

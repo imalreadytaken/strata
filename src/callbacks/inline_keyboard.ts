@@ -10,8 +10,6 @@
  * See `STRATA_SPEC.md` §5.5 and
  * `openspec/changes/add-callbacks/specs/callbacks/spec.md`.
  */
-import type { PluginInteractiveTelegramHandlerContext } from "openclaw/plugin-sdk/core";
-
 import { commitEventCore } from "../tools/commit_event.js";
 import type { EventToolDeps } from "../tools/types.js";
 
@@ -28,6 +26,35 @@ export type PluginInteractiveButtons = Array<
     style?: "danger" | "success" | "primary";
   }>
 >;
+
+/**
+ * Local mirror of the interactive-callback context the SDK passes to our
+ * registered handler. The 2026.3.23 SDK exported this as
+ * `PluginInteractiveTelegramHandlerContext` from `openclaw/plugin-sdk/core`;
+ * 2026.5.7 generalised registrations to `PluginInteractiveRegistration<TContext>`
+ * with no named per-channel context export. We mirror only the runtime fields
+ * Strata actually reads/writes; the SDK still passes the same shape.
+ */
+export interface PluginInteractiveTelegramHandlerContext {
+  callback: {
+    payload: string;
+    chatId: string | number;
+    messageId: string | number;
+    messageText?: string;
+  };
+  /**
+   * SDK-provided conversation handle; we use it as the session id so the
+   * pending buffer drain hits the same session that issued the buttons.
+   * Optional on this mirror because not every callsite needs it.
+   */
+  conversationId?: string;
+  respond: {
+    editMessage: (args: {
+      text: string;
+      buttons: PluginInteractiveButtons;
+    }) => Promise<unknown>;
+  };
+}
 
 export type StrataCallbackAction = "commit" | "edit" | "abandon";
 

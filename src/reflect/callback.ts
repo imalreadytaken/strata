@@ -4,7 +4,10 @@
  * and updates the corresponding `proposals` row. Edits the source
  * message to acknowledge the user's action and clears buttons.
  */
-import type { PluginInteractiveTelegramHandlerContext } from "openclaw/plugin-sdk/core";
+// 2026.5.7 SDK dropped the named per-channel handler context export; we
+// reuse the local mirror defined in `callbacks/inline_keyboard.ts`. See the
+// comment there for why we mirror the SDK's runtime shape ourselves.
+import type { PluginInteractiveTelegramHandlerContext } from "../callbacks/inline_keyboard.js";
 
 import type { Logger } from "../core/logger.js";
 import type { ProposalsRepository } from "../db/repositories/proposals.js";

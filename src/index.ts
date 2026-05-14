@@ -109,13 +109,15 @@ export default {
           llmClient: runtime.llmClient,
           logger: runtime.logger,
         });
+        // 2026.5.7 SDK widened the handler's ctx to `unknown`; cast through
+        // unknown so our typed reflect callback satisfies the generic surface.
         api.registerInteractiveHandler({
           channel: "telegram",
           namespace: "strata-propose",
           handler: handleReflectCallback({
             proposalsRepo: runtime.proposalsRepo,
             logger: runtime.logger,
-          }),
+          }) as unknown as (ctx: unknown) => Promise<void>,
         });
 
         // Register the default reextract strategies. Each register() throws

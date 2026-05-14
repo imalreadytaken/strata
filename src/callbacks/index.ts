@@ -42,9 +42,14 @@ export function registerStrataCallbacks(
       logger: runtime.logger,
     },
   };
+  // The 2026.5.7 SDK types `handler` as `(ctx: unknown) => …`. Our handler is
+  // strongly typed to the per-channel context shape we mirror locally; cast
+  // through `unknown` at the boundary so the strict generic surface accepts it.
   api.registerInteractiveHandler({
     channel: "telegram",
     namespace: "strata",
-    handler: handleStrataCallback(baseDeps),
+    handler: handleStrataCallback(baseDeps) as unknown as (
+      ctx: unknown,
+    ) => Promise<void>,
   });
 }
